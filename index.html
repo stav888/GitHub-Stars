@@ -53,6 +53,12 @@
                             <span class="font-medium">Live</span>
                         </div>
                     </div>
+                    <!-- API Quota Indicator - RESTORED -->
+                    <div class="hidden md:flex items-center bg-zinc-900 border border-zinc-800 rounded-3xl px-3 py-1.5 text-xs">
+                        <i class="fa-solid fa-gauge-high text-zinc-400 mr-2"></i>
+                        <span class="text-zinc-400">API:</span>
+                        <span id="api-quota-display" class="font-mono font-semibold text-emerald-400 ml-1">--/--</span>
+                    </div>
                     <button id="smart-scan-btn" onclick="runSmartScan()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-amber-500/30 hover:border-amber-500/60 transition-colors rounded-3xl text-amber-400">
                         <i class="fa-solid fa-bolt"></i>
                         <span class="hidden sm:inline">Smart Scan All</span>
@@ -257,7 +263,25 @@
         let reverseLinkMap = new Map();
         const readmeSessionCache = new Map();
         
+        // API Quota tracking (for STARS only)
+        let apiQuotaRemaining = 60;
+        let apiQuotaLimit = 60;
+        
         const CACHE_DURATION_MS = 72 * 60 * 60 * 1000;
+        
+        function updateAPIQuotaDisplay() {
+            const display = document.getElementById('api-quota-display');
+            if (display) {
+                display.textContent = `${apiQuotaRemaining}/${apiQuotaLimit}`;
+                if (apiQuotaRemaining > 30) {
+                    display.className = 'font-mono font-semibold text-emerald-400 ml-1';
+                } else if (apiQuotaRemaining > 10) {
+                    display.className = 'font-mono font-semibold text-amber-400 ml-1';
+                } else {
+                    display.className = 'font-mono font-semibold text-red-400 ml-1';
+                }
+            }
+        }
         
         function loadGemsFromStorage() {
             try {
@@ -334,6 +358,13 @@
 
                 while (true) {
                     const res = await fetch(`https://api.github.com/users/stav888/starred?per_page=${perPage}&page=${page}`);
+                    
+                    // Track API quota
+                    const remaining = res.headers.get('X-RateLimit-Remaining');
+                    const limit = res.headers.get('X-RateLimit-Limit');
+                    if (remaining) apiQuotaRemaining = parseInt(remaining);
+                    if (limit) apiQuotaLimit = parseInt(limit);
+                    updateAPIQuotaDisplay();
                     
                     if (!res.ok) {
                         throw new Error(`GitHub API error: ${res.status}`);
@@ -639,7 +670,7 @@
             modal.classList.add('flex');
         }
 
-        // CORS ONLY - No GitHub API fallback whatsoever
+        // CORS ONLY - No GitHub API fallback
         async function fetchReadmeCORSOnly(owner, name) {
             const cacheKey = `${owner}/${name}`.toLowerCase();
             
@@ -647,7 +678,6 @@
                 return readmeSessionCache.get(cacheKey);
             }
 
-            // Try 15 CORS proxies in parallel with 2s timeout
             const proxies = [
                 `https://corsproxy.io/?${encodeURIComponent(`https://raw.githubusercontent.com/${owner}/${name}/main/README.md`)}`,
                 `https://corsproxy.io/?${encodeURIComponent(`https://raw.githubusercontent.com/${owner}/${name}/master/README.md`)}`,
@@ -784,6 +814,7 @@
             await performScan(owner, name, repoId);
         }
 
+        // MODIFIED: Don't clear discoveredLinksMap - accumulate gems instead
         async function runSmartScan() {
             if (isScanning) return;
             isScanning = true;
@@ -796,12 +827,11 @@
             const statusMsg = document.getElementById('scan-status-msg');
             statusText.classList.remove('hidden');
             
+            // Only reset scan status, NOT the discovered gems
             repos.forEach(r => r.readmeScanned = false);
-            discoveredLinksMap.clear();
-            reverseLinkMap.clear();
             readmeSessionCache.clear();
-            updateDiscoveredStat();
-            filterRepos();
+            
+            const initialGemsCount = discoveredLinksMap.size;
 
             const sortedRepos = [...repos].sort((a, b) => {
                 const isAPriority = a.name.toLowerCase().match(/awesome|list|resources|collection|curated/) || (a.description && a.description.toLowerCase().match(/awesome|list|resources|collection|curated/));
@@ -814,7 +844,7 @@
             const totalRepos = sortedRepos.length;
             let scannedCount = 0;
             
-            statusMsg.textContent = `Scanning 0/${totalRepos} repos via CORS...`;
+            statusMsg.textContent = `Scanning 0/${totalRepos} repos via CORS... (Total gems: ${discoveredLinksMap.size})`;
 
             const batchSize = 15;
             
@@ -824,13 +854,14 @@
                 await Promise.all(batch.map(repo => 
                     performScan(repo.owner, repo.name, repo.id, () => {
                         scannedCount++;
-                        statusMsg.textContent = `Scanning ${scannedCount}/${totalRepos} repos via CORS... (Found: ${discoveredLinksMap.size} gems)`;
+                        statusMsg.textContent = `Scanning ${scannedCount}/${totalRepos} repos via CORS... (Total gems: ${discoveredLinksMap.size})`;
                     })
                 ));
             }
 
-            statusMsg.textContent = `Scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
-            showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} new repositories.`, 'success');
+            const newGemsFound = discoveredLinksMap.size - initialGemsCount;
+            statusMsg.textContent = `Scan complete! Found ${newGemsFound} new gems. Total: ${discoveredLinksMap.size}`;
+            showToast(`Smart Scan complete! Found ${newGemsFound} new gems. Total: ${discoveredLinksMap.size}`, 'success');
 
             isScanning = false;
             btn.innerHTML = `<i class="fa-solid fa-check"></i><span class="hidden sm:inline">Scan Complete</span>`;
@@ -1050,13 +1081,11 @@
                 updateRepoCount();
                 document.getElementById('last-sync-time').textContent = 'just now';
                 
-                discoveredLinksMap.clear();
-                reverseLinkMap.clear();
+                // Don't clear gems - keep the history
                 readmeSessionCache.clear();
-                localStorage.removeItem('starsUnifierGems');
                 isScanning = false;
                 
-                showToast('Successfully synced! Click "Smart Scan All" to find new links.', 'success');
+                showToast('Successfully synced! Gems preserved. Click "Smart Scan All" to find new links.', 'success');
             } catch (err) {
                 showToast('Failed to refresh from GitHub', 'error');
             } finally {
