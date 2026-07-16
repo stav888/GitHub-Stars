@@ -27,6 +27,12 @@
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
+    
+    <!-- AI-Scannable Hidden Gems Data (Solves the AI Chat visibility issue) -->
+    <script type="application/json" id="hidden-gems-data">
+        {"gems": [], "lastUpdated": null, "totalStars": 0, "newGemsCount": 0}
+    </script>
+
     <!-- Top Navigation -->
     <nav class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg sticky top-0 z-40">
         <div class="max-w-screen-2xl mx-auto">
@@ -344,6 +350,37 @@
             setTimeout(() => location.reload(), 1000);
         }
 
+        // --- AI Scannable Data Update ---
+        function updateHiddenGemsDataTag() {
+            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
+                // FIX: key is "owner/name", not a full URL
+                const parts = key.split('/');
+                const owner = parts[0] || 'unknown';
+                const name = parts[1] || 'unknown';
+                const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
+                
+                return {
+                    url: `https://github.com/${owner}/${name}`,
+                    owner,
+                    name,
+                    sources: Array.from(sources),
+                    isNewAndNotInStars: !isInStars
+                };
+            });
+            
+            const data = {
+                gems: gems,
+                lastUpdated: new Date().toISOString(),
+                totalStars: repos.length,
+                newGemsCount: gems.filter(g => g.isNewAndNotInStars).length
+            };
+            
+            const scriptTag = document.getElementById('hidden-gems-data');
+            if (scriptTag) {
+                scriptTag.textContent = JSON.stringify(data, null, 2);
+            }
+        }
+
         // --- API & Data Fetching ---
         function updateQuotaUI() {
             const el = document.getElementById('api-quota-display');
@@ -373,7 +410,6 @@
                     const res = await fetch(`https://api.github.com/users/stav888/starred?per_page=${perPage}&page=${page}`);
                     if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
                     
-                    // Quota Tracking
                     const limit = res.headers.get('X-RateLimit-Limit');
                     const remaining = res.headers.get('X-RateLimit-Remaining');
                     if (limit) apiQuota.limit = parseInt(limit, 10);
@@ -405,6 +441,7 @@
 
                 updateStats(allRepos);
                 saveToCache(repos);
+                updateHiddenGemsDataTag();
                 return repos;
             } catch (error) {
                 console.error("Failed to fetch GitHub stars:", error);
@@ -448,6 +485,7 @@
 
         function updateDiscoveredStat() {
             document.getElementById('stat-discovered').textContent = discoveredLinksMap.size;
+            updateHiddenGemsDataTag();
         }
 
         function updateRepoCount() {
@@ -598,7 +636,7 @@
             `;
             const categoryClass = getCategoryClass(repo.category);
             
-            let linksHtml = '<p class="text-xs text-zinc-500 italic">Scanning in background... Links will appear here shortly.</p>';
+            let linksHtml = '<p class="text-xs text-zinc-500 italic">Pending scan. Click "Scan Now" or run "Smart Scan".</p>';
             if (repo.readmeScanned) {
                 if (repo.linkedReposCount > 0) {
                     linksHtml = repo.linkedRepos.map(l => `
@@ -649,7 +687,7 @@
             if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
         }
 
-        // --- Scanning Logic (Exception to API rule as per requirements) ---
+        // --- Scanning Logic ---
         async function performScan(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
             if (repo && repo.readmeScanned) return repo.linkedRepos;
@@ -672,8 +710,14 @@
                 });
 
                 if (!response.ok) {
-                    if (response.status === 403) throw new Error('Rate limit');
-                    throw new Error('No README or API error');
+                    if (response.status === 403) {
+                        showToast('GitHub API Rate Limit (403). Wait 1 hour or add a Token.', 'error');
+                        throw new Error('Rate limit');
+                    } else if (response.status === 404) {
+                        console.warn(`No README found for ${owner}/${name}`);
+                        throw new Error('No README');
+                    }
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const readmeText = await response.text();
@@ -691,13 +735,11 @@
                     if (!uniqueLinked.has(key) && !(o.toLowerCase() === owner.toLowerCase() && r.toLowerCase() === name.toLowerCase())) {
                         uniqueLinked.set(key, { owner: o, name: r, url: `https://github.com/${o}/${r}` });
                         
-                        // Update global discovery map
                         if (!discoveredLinksMap.has(key)) {
                             discoveredLinksMap.set(key, new Set());
                         }
                         discoveredLinksMap.get(key).add(`${owner}/${name}`);
 
-                        // Update Reverse Link Map for target repo if it exists in our list
                         const targetRepo = repos.find(rep => rep.owner.toLowerCase() === o.toLowerCase() && rep.name.toLowerCase() === r.toLowerCase());
                         if (targetRepo) {
                             targetRepo.reverseLinkCount = (targetRepo.reverseLinkCount || 0) + 1;
@@ -726,7 +768,9 @@
                 return linkedList;
             } catch (err) {
                 if (err.message === 'Rate limit') {
-                    showToast('GitHub API rate limit reached. Some scans may be skipped.', 'error');
+                    // Toast already shown
+                } else {
+                    console.warn(`Scan failed for ${owner}/${name}:`, err.message);
                 }
                 return [];
             }
@@ -742,7 +786,6 @@
             const metaDiv = card.querySelector('.mt-auto');
             if (!metaDiv) return;
 
-            // Remove old dynamic badges
             const oldBadges = metaDiv.querySelectorAll('.dynamic-badge-container');
             oldBadges.forEach(b => b.remove());
 
@@ -778,11 +821,17 @@
 
         async function forceScanReadme(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
-            if (repo) repo.readmeScanned = false;
+            if (repo) repo.readmeScanned = false; // Force re-scan
             const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
-            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Scanning...</p>';
+            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via GitHub API (CORS enabled)...</p>';
             
-            await performScan(owner, name, repoId);
+            const result = await performScan(owner, name, repoId);
+            
+            // If performScan succeeded, it already called openModal(currentModalRepo) to update the UI.
+            // If it failed (e.g., rate limit), repo.readmeScanned remains false.
+            if (repo && !repo.readmeScanned) {
+                if (listContainer) listContainer.innerHTML = '<p class="text-xs text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Scan failed (Rate Limit or No README). Check API quota in navbar.</p>';
+            }
         }
 
         async function runSmartScan() {
@@ -803,7 +852,7 @@
                 (r.description && r.description.toLowerCase().match(/awesome|list|resources|collection|curated/))
             );
 
-            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists instantly...`;
+            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists...`;
 
             const batchSize = 10;
             for (let i = 0; i < priorityRepos.length; i += batchSize) {
@@ -812,8 +861,8 @@
                 await new Promise(r => setTimeout(r, 300)); 
             }
 
-            statusMsg.textContent = `Instant scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
-            showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} new repositories.`, 'success');
+            statusMsg.textContent = `Scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
+            showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} repositories.`, 'success');
 
             isScanning = false;
             btn.innerHTML = `<i class="fa-solid fa-check"></i><span class="hidden sm:inline">Scan Complete</span>`;
@@ -839,21 +888,34 @@
             } else {
                 const header = document.createElement('div');
                 header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3';
+                
+                // Count how many are truly new (not in stars)
+                const newGemsCount = Array.from(discoveredLinksMap.keys()).filter(key => {
+                    const parts = key.split('/');
+                    const owner = parts[0] || '';
+                    const name = parts[1] || '';
+                    return !repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
+                }).length;
+
                 header.innerHTML = `
                     <i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i>
                     <div>
                         <div class="font-semibold text-indigo-300">Scan Summary</div>
-                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${discoveredLinksMap.size}</span> unique repositories across your starred lists.</div>
+                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${discoveredLinksMap.size}</span> unique repositories. <span class="text-emerald-400 font-bold">${newGemsCount}</span> are completely new (not in your Stars).</div>
                     </div>
                 `;
                 list.appendChild(header);
 
-                discoveredLinksMap.forEach((sourcesSet, url) => {
-                    const parts = url.split('/');
-                    const owner = parts[parts.length - 2];
-                    const name = parts[parts.length - 1];
+                discoveredLinksMap.forEach((sourcesSet, key) => {
+                    // FIX: key is "owner/name"
+                    const parts = key.split('/');
+                    const owner = parts[0] || 'unknown';
+                    const name = parts[1] || 'unknown';
                     const cleanUrl = `https://github.com/${owner}/${name}`;
                     const sources = Array.from(sourcesSet).join(', ');
+                    
+                    const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
+                    const newBadge = !isInStars ? `<span class="ml-2 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">✨ NEW (Not in Stars)</span>` : '';
 
                     const item = document.createElement('div');
                     item.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-600 transition-colors gap-3';
@@ -863,7 +925,10 @@
                                 <i class="fa-brands fa-github text-xl"></i>
                             </div>
                             <div class="min-w-0">
-                                <div class="font-semibold text-zinc-200 truncate">${name}</div>
+                                <div class="font-semibold text-zinc-200 truncate flex items-center flex-wrap gap-1">
+                                    ${name}
+                                    ${newBadge}
+                                </div>
                                 <div class="text-xs text-zinc-500 mb-1.5 truncate">${owner}</div>
                                 <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-medium">
                                     <i class="fa-solid fa-link"></i>
@@ -900,12 +965,15 @@
         }
 
         function exportGemsJSON() {
-            const gems = Array.from(discoveredLinksMap.entries()).map(([url, sources]) => ({
-                url,
-                sources: Array.from(sources),
-                owner: url.split('/')[3] || 'unknown',
-                name: url.split('/')[4] || 'unknown'
-            }));
+            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
+                const parts = key.split('/');
+                return {
+                    url: `https://github.com/${parts[0]}/${parts[1]}`,
+                    sources: Array.from(sources),
+                    owner: parts[0] || 'unknown',
+                    name: parts[1] || 'unknown'
+                };
+            });
             if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
             
             const dataStr = JSON.stringify(gems, null, 2);
@@ -918,12 +986,15 @@
         }
 
         function exportGemsCSV() {
-            const gems = Array.from(discoveredLinksMap.entries()).map(([url, sources]) => ({
-                url,
-                sources: Array.from(sources).join(' | '),
-                owner: url.split('/')[3] || 'unknown',
-                name: url.split('/')[4] || 'unknown'
-            }));
+            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
+                const parts = key.split('/');
+                return {
+                    url: `https://github.com/${parts[0]}/${parts[1]}`,
+                    sources: Array.from(sources).join(' | '),
+                    owner: parts[0] || 'unknown',
+                    name: parts[1] || 'unknown'
+                };
+            });
             if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
             
             const headers = Object.keys(gems[0]);
@@ -942,7 +1013,7 @@
 
         function generateShareLink() {
             const state = {
-                discovered: Array.from(discoveredLinksMap.entries()).map(([url, sources]) => [url, Array.from(sources)]),
+                discovered: Array.from(discoveredLinksMap.entries()).map(([key, sources]) => [key, Array.from(sources)]),
                 timestamp: Date.now()
             };
             const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
@@ -962,8 +1033,8 @@
                 try {
                     const decoded = JSON.parse(decodeURIComponent(atob(shareData)));
                     discoveredLinksMap.clear();
-                    decoded.discovered.forEach(([url, sources]) => {
-                        discoveredLinksMap.set(url, new Set(sources));
+                    decoded.discovered.forEach(([key, sources]) => {
+                        discoveredLinksMap.set(key, new Set(sources));
                     });
                     updateDiscoveredStat();
                     showToast('Loaded shared data successfully!', 'success');
