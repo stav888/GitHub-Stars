@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Space+Grotesk:wght@500;600&amp;display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
         :root { --accent: #6366f1; }
         body { font-family: 'Inter', system_ui, sans-serif; }
         .font-display { font-family: 'Space Grotesk', 'Inter', system_ui, sans-serif; font-weight: 600; }
@@ -17,20 +17,17 @@
         .star-count { font-variant-numeric: tabular-nums; }
         .category-pill { transition: all 0.1s ease; cursor: pointer; }
         .category-pill:hover { transform: translateY(-1px); }
-        .category-pill.active { background-color: #6366f1; color: white; border-color: #6366f1; }
+        .category-pill.active { background-color: #6366f1 !important; color: white !important; border-color: #6366f1 !important; }
         .repo-grid { scrollbar-width: thin; scrollbar-color: #3f3f46 #18181b; }
         .modal { animation: modalPop 0.2s ease forwards; }
         @keyframes modalPop { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .stat-value { font-variant-numeric: tabular-nums; }
         .github-link { transition: color 0.1s ease; }
         .github-link:hover { color: #6366f1; }
-        .modal-scroll::-webkit-scrollbar { width: 8px; }
-        .modal-scroll::-webkit-scrollbar-track { background: #18181b; border-radius: 4px; }
-        .modal-scroll::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
-        .modal-scroll::-webkit-scrollbar-thumb:hover { background: #52525b; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
+    <!-- Top Navigation -->
     <nav class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-lg sticky top-0 z-40">
         <div class="max-w-screen-2xl mx-auto">
             <div class="px-4 sm:px-8 py-4 flex items-center justify-between flex-wrap gap-4">
@@ -39,55 +36,72 @@
                         <div class="w-9 h-9 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center flex-shrink-0">
                             <i class="fa-solid fa-star text-white text-xl"></i>
                         </div>
-                        <div>
-                            <span class="font-display text-xl sm:text-2xl font-semibold tracking-tighter">Stars Unifier</span>
-                            <span class="text-zinc-500 text-xl hidden sm:inline">•</span>
-                            <span class="font-medium text-zinc-400 hidden sm:inline">stav888</span>
+                        <div class="min-w-0">
+                            <span class="font-display text-xl sm:text-2xl font-semibold tracking-tighter truncate block">Stars Unifier</span>
+                            <span class="text-zinc-500 text-sm sm:text-xl">•</span>
+                            <span class="font-medium text-zinc-400 text-sm sm:text-base">stav888</span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-x-2 flex-wrap">
-                    <div class="hidden md:flex items-center bg-zinc-900 border border-zinc-800 rounded-3xl px-3 py-1.5 text-sm">
-                        <div class="flex items-center text-emerald-400">
-                            <i class="fa-solid fa-circle fa-beat mr-1.5 text-xs"></i>
-                            <span class="font-medium">Live from GitHub</span>
-                        </div>
+                <div class="flex items-center gap-x-2 flex-wrap justify-end">
+                    <div id="api-quota-display" class="hidden md:flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800">
+                        API: --/--
                     </div>
                     
-                    <div class="hidden md:flex items-center bg-zinc-900 border border-zinc-800 rounded-3xl px-3 py-1.5 text-xs">
-                        <i class="fa-solid fa-gauge-high text-zinc-400 mr-2"></i>
-                        <span class="text-zinc-400">API:</span>
-                        <span id="api-quota-display" class="font-mono font-semibold text-emerald-400 ml-1">--/--</span>
-                    </div>
+                    <button onclick="clearCache()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-red-500/30 hover:border-red-500/60 transition-colors rounded-3xl text-red-400" title="Clear Cache & Rescan">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span class="hidden sm:inline">Clear Cache</span>
+                    </button>
 
-                    <button id="smart-scan-btn" onclick="runSmartScan()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-amber-500/30 hover:border-amber-500/60 transition-colors rounded-3xl text-amber-400">
+                    <button id="smart-scan-btn" onclick="runSmartScan()" 
+                            class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-amber-500/30 hover:border-amber-500/60 transition-colors rounded-3xl text-amber-400">
                         <i class="fa-solid fa-bolt"></i>
                         <span class="hidden sm:inline">Smart Scan</span>
                     </button>
 
-                    <button onclick="showDiscoveredModal()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-indigo-500/30 hover:border-indigo-500/60 transition-colors rounded-3xl text-indigo-400">
-                        <i class="fa-solid fa-table"></i>
-                        <span class="hidden sm:inline">Gems Table</span>
-                    </button>
-                    
-                    <button onclick="refreshData()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 transition-colors rounded-3xl">
+                    <button onclick="refreshData()" 
+                            class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-600 transition-colors rounded-3xl">
                         <i class="fa-solid fa-sync-alt"></i>
                         <span class="hidden sm:inline">Refresh</span>
                     </button>
+                    
+                    <div class="relative group">
+                        <button class="flex items-center gap-x-2 px-4 sm:px-5 py-2 text-xs sm:text-sm font-semibold bg-white text-zinc-950 hover:bg-zinc-100 transition-colors rounded-3xl">
+                            <i class="fa-solid fa-download"></i>
+                            <span class="hidden sm:inline">Export</span>
+                            <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                            <button onclick="exportData()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-file-code text-indigo-400 w-5"></i> Export All Repos (JSON)
+                            </button>
+                            <button onclick="exportGemsJSON()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-gem text-amber-400 w-5"></i> Export Hidden Gems (JSON)
+                            </button>
+                            <button onclick="exportGemsCSV()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-file-csv text-emerald-400 w-5"></i> Export Hidden Gems (CSV)
+                            </button>
+                            <div class="border-t border-zinc-800 my-1"></div>
+                            <button onclick="generateShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-share-nodes text-blue-400 w-5"></i> Copy Share Link
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 pt-6 sm:pt-8 pb-6">
-        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-8 pt-8 pb-6">
+        <!-- Hero -->
+        <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
             <div class="max-w-2xl">
-                <h1 class="font-display text-4xl sm:text-5xl lg:text-7xl font-semibold tracking-tighter leading-none">
+                <h1 class="font-display text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tighter leading-none">
                     Your GitHub Stars,<br>
                     <span class="text-zinc-400">unified & auto-expanded.</span>
                 </h1>
-                <p class="mt-3 sm:mt-4 text-base sm:text-xl text-zinc-400 max-w-md">
+                <p class="mt-4 text-lg sm:text-xl text-zinc-400 max-w-md">
                     Automatically organized • Instant README link extraction • Discover hidden gems
                 </p>
             </div>
@@ -100,58 +114,57 @@
                 <div class="text-zinc-500">
                     Last synced: <span id="last-sync-time" class="font-mono text-emerald-300">just now</span>
                 </div>
-                <div id="cache-status-text" class="text-[10px] text-indigo-400/80 font-mono mt-1 hidden">
-                    <i class="fa-solid fa-database mr-1"></i> <span id="cache-status-msg">Cache valid</span>
-                </div>
                 <div id="scan-status-text" class="text-[10px] text-amber-400/80 font-mono mt-1 hidden">
                     <i class="fa-solid fa-spinner fa-spin mr-1"></i> <span id="scan-status-msg">Scanning...</span>
                 </div>
             </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-10">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 cursor-pointer hover:border-zinc-600 transition-colors" onclick="showDiscoveredModal()">
+        <!-- Stats Row -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 cursor-pointer hover:border-zinc-600 transition-colors" onclick="showDiscoveredModal()">
                 <div class="flex items-baseline gap-2">
                     <span id="stat-total" class="text-4xl sm:text-5xl font-semibold stat-value">—</span>
                 </div>
                 <div class="text-zinc-400 mt-1 flex items-center gap-2">
                     <i class="fa-solid fa-star text-amber-400"></i>
-                    <span class="font-medium text-xs sm:text-sm">Total Stars</span>
+                    <span class="font-medium">Total Stars</span>
                 </div>
             </div>
             
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
                 <div class="flex items-baseline gap-2">
                     <span id="stat-categories" class="text-4xl sm:text-5xl font-semibold stat-value">—</span>
                 </div>
                 <div class="text-zinc-400 mt-1 flex items-center gap-2">
                     <i class="fa-solid fa-layer-group text-indigo-400"></i>
-                    <span class="font-medium text-xs sm:text-sm">Categories</span>
+                    <span class="font-medium">Categories</span>
                 </div>
             </div>
             
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5">
                 <div class="flex items-baseline gap-2">
                     <span id="stat-toplang" class="text-4xl sm:text-5xl font-semibold stat-value">—</span>
                 </div>
                 <div class="text-zinc-400 mt-1 flex items-center gap-2">
                     <i class="fa-solid fa-code text-emerald-400"></i>
-                    <span class="font-medium text-xs sm:text-sm">Top Language</span>
+                    <span class="font-medium">Top Language</span>
                 </div>
             </div>
             
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl sm:rounded-3xl p-4 sm:p-5 cursor-pointer hover:border-amber-500/50 transition-colors" onclick="showDiscoveredModal()">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-5 cursor-pointer hover:border-amber-500/50 transition-colors" onclick="showDiscoveredModal()">
                 <div class="flex items-baseline gap-2">
                     <span id="stat-discovered" class="text-4xl sm:text-5xl font-semibold stat-value text-amber-400">0</span>
                 </div>
                 <div class="text-zinc-400 mt-1 flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
-                    <span class="font-medium text-xs sm:text-sm">Hidden Gems Found</span>
+                    <span class="font-medium">Hidden Gems Found</span>
                 </div>
             </div>
         </div>
 
-        <div class="mb-6 sm:mb-8">
+        <!-- Categories / Insights -->
+        <div class="mb-8">
             <div class="flex items-center justify-between mb-3 px-1">
                 <h2 class="section-header font-semibold tracking-tight">Insights • Categories</h2>
                 <button onclick="clearCategoryFilter()" class="text-xs px-3 py-1 text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1">
@@ -162,6 +175,7 @@
             <div id="category-pills" class="flex flex-wrap gap-2"></div>
         </div>
 
+        <!-- Repositories Header + Search -->
         <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-y-3 mb-4 px-1">
             <div>
                 <h2 class="section-header font-semibold tracking-tight flex items-center gap-3">
@@ -187,10 +201,11 @@
         </div>
         
         <div class="px-1 mb-3">
-            <p class="text-[10px] text-zinc-500">Tip: 🔗 badges indicate READMEs that contain links to other GitHub repos.</p>
+            <p class="text-[10px] text-zinc-500">Tip: Green link badges indicate READMEs with outgoing links. Purple badges indicate reverse links or chain patterns.</p>
         </div>
 
-        <div id="repo-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 repo-grid"></div>
+        <!-- Repository Grid -->
+        <div id="repo-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 repo-grid"></div>
         
         <div id="no-results" class="hidden text-center py-12">
             <i class="fa-solid fa-search text-4xl text-zinc-700 mb-4"></i>
@@ -200,18 +215,18 @@
     </div>
 
     <!-- Detail Modal -->
-    <div id="modal" onclick="if (event.target.id === 'modal') closeModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-2xl rounded-2xl sm:rounded-3xl overflow-hidden modal flex flex-col max-h-[95vh] sm:max-h-[90vh]">
-            <div class="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex justify-between items-start border-b border-zinc-800 flex-shrink-0">
+    <div id="modal" onclick="if (event.target.id === 'modal') closeModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-2xl rounded-3xl overflow-hidden modal">
+            <div class="px-6 pt-6 pb-4 flex justify-between items-start border-b border-zinc-800">
                 <div id="modal-header-content" class="flex-1 pr-4"></div>
                 <button onclick="closeModal()" class="text-zinc-400 hover:text-white p-2 -mr-2 -mt-2">
                     <i class="fa-solid fa-times text-xl"></i>
                 </button>
             </div>
-            <div class="p-4 sm:p-6 space-y-4 sm:space-y-6 text-sm overflow-y-auto modal-scroll flex-1" id="modal-body"></div>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between flex-shrink-0">
-                <div class="text-xs text-zinc-500 hidden sm:block">Synced from GitHub • stav888's stars</div>
-                <button onclick="openGitHubFromModal()" class="flex items-center gap-x-2 px-4 sm:px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors">
+            <div class="p-6 space-y-6 text-sm max-h-[60vh] overflow-y-auto" id="modal-body"></div>
+            <div class="px-6 py-4 bg-zinc-950 border-t border-zinc-800 flex items-center justify-between">
+                <div class="text-xs text-zinc-500">Synced from GitHub • stav888's stars</div>
+                <button onclick="openGitHubFromModal()" class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors">
                     <i class="fa-brands fa-github"></i>
                     <span>View on GitHub</span>
                 </button>
@@ -219,46 +234,27 @@
         </div>
     </div>
 
-    <!-- Discovered Repos Global Modal (Gems Table) -->
-    <div id="discovered-modal" onclick="if (event.target.id === 'discovered-modal') closeDiscoveredModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4">
-        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-4xl sm:max-w-5xl rounded-2xl sm:rounded-3xl overflow-hidden modal flex flex-col max-h-[95vh] sm:max-h-[90vh]">
-            <div class="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex justify-between items-start border-b border-zinc-800 bg-zinc-900 flex-shrink-0">
+    <!-- Discovered Repos Global Modal -->
+    <div id="discovered-modal" onclick="if (event.target.id === 'discovered-modal') closeDiscoveredModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-3xl rounded-3xl overflow-hidden modal flex flex-col max-h-[85vh]">
+            <div class="px-6 pt-6 pb-4 flex justify-between items-start border-b border-zinc-800 bg-zinc-900">
                 <div>
                     <div class="font-display text-xl sm:text-2xl font-semibold tracking-tighter flex items-center gap-2">
-                        <i class="fa-solid fa-table text-indigo-400"></i>
+                        <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i>
                         Discovered Hidden Gems
                     </div>
-                    <p class="text-xs sm:text-sm text-zinc-400 mt-1">Repositories found inside the READMEs of your starred repos.</p>
+                    <p class="text-sm text-zinc-400 mt-1">Repositories found inside the READMEs of your starred repos.</p>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="copyGemsLink()" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-link"></i>
-                        <span class="hidden sm:inline">Copy Share Link</span>
-                    </button>
-                    <button onclick="clearCacheAndRescan()" class="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-red-900/50 hover:bg-red-900/80 text-red-400 border border-red-800 rounded-2xl transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-trash-can"></i>
-                        <span class="hidden sm:inline">Clear Cache</span>
-                    </button>
-                    <button onclick="closeDiscoveredModal()" class="text-zinc-400 hover:text-white p-2 -mr-2 -mt-2">
-                        <i class="fa-solid fa-times text-xl"></i>
-                    </button>
-                </div>
+                <button onclick="closeDiscoveredModal()" class="text-zinc-400 hover:text-white p-2 -mr-2 -mt-2">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
             </div>
-            <div id="discovered-list" class="p-4 sm:p-6 overflow-y-auto modal-scroll flex-1 bg-zinc-950/50 space-y-3"></div>
-            <div class="px-4 sm:px-6 py-3 sm:py-4 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between flex-shrink-0">
-                <div class="text-xs text-zinc-500">
-                    <span id="gems-table-count">0</span> gems found • Data saved in browser storage (7 days)
-                </div>
-                <div class="flex gap-2">
-                    <button onclick="exportGemsCSV()" class="px-4 sm:px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-file-csv text-emerald-400"></i>
-                        <span>CSV</span>
-                    </button>
-                    <button onclick="exportGemsJSON()" class="px-4 sm:px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors flex items-center gap-2">
-                        <i class="fa-solid fa-file-code text-amber-400"></i>
-                        <span>JSON</span>
-                    </button>
-                </div>
+            <div id="discovered-list" class="p-6 overflow-y-auto space-y-3 flex-1 bg-zinc-950/50"></div>
+            <div class="px-6 py-4 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between">
+                <div class="text-xs text-zinc-500">Updates in real-time as scanning progresses.</div>
+                <button onclick="closeDiscoveredModal()" class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors">
+                    <span>Close</span>
+                </button>
             </div>
         </div>
     </div>
@@ -268,69 +264,23 @@
             document.documentElement.style.setProperty('--accent', '#6366f1');
         }
 
-        let repos = [];
-        let isScanning = false;
+        // --- State & Cache Management ---
+        const CACHE_KEY = 'stars_unifier_stav888_cache_v2';
+        const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+        let readmeSessionCache = new Map();
         let discoveredLinksMap = new Map(); 
         let reverseLinkMap = new Map();
-        const readmeSessionCache = new Map();
-        
-        let apiQuotaRemaining = 60;
-        let apiQuotaLimit = 60;
-        const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 Days
+        let apiQuota = { limit: 60, remaining: 60 };
 
-        function updateAPIQuotaDisplay() {
-            const display = document.getElementById('api-quota-display');
-            if (display) {
-                display.textContent = `${apiQuotaRemaining}/${apiQuotaLimit}`;
-                if (apiQuotaRemaining > 30) display.className = 'font-mono font-semibold text-emerald-400 ml-1';
-                else if (apiQuotaRemaining > 10) display.className = 'font-mono font-semibold text-amber-400 ml-1';
-                else display.className = 'font-mono font-semibold text-red-400 ml-1';
-            }
-        }
+        let repos = [];
+        let isScanning = false;
+        let currentFilter = { search: '', category: null };
+        let currentModalRepo = null;
 
-        function loadGemsFromStorage() {
-            try {
-                const saved = localStorage.getItem('starsUnifierGems');
-                if (saved) {
-                    const gems = JSON.parse(saved);
-                    const timestamp = gems.timestamp ? new Date(gems.timestamp).getTime() : 0;
-                    const now = Date.now();
-                    const age = now - timestamp;
-                    
-                    discoveredLinksMap = new Map(gems.discoveredLinksMap || []);
-                    reverseLinkMap = new Map(gems.reverseLinkMap || []);
-                    
-                    const cacheStatusText = document.getElementById('cache-status-text');
-                    const cacheStatusMsg = document.getElementById('cache-status-msg');
-                    
-                    if (age < CACHE_DURATION_MS) {
-                        const hoursLeft = Math.floor((CACHE_DURATION_MS - age) / (60 * 60 * 1000));
-                        cacheStatusText.classList.remove('hidden');
-                        cacheStatusMsg.textContent = `Cache valid • ${discoveredLinksMap.size} gems • Refreshes in ${hoursLeft}h`;
-                        return true;
-                    } else {
-                        cacheStatusText.classList.remove('hidden');
-                        cacheStatusMsg.textContent = `Cache expired • Will refresh`;
-                        return false;
-                    }
-                }
-            } catch (e) { console.error('Failed to load gems:', e); }
-            return false;
-        }
-        
-        function saveGemsToStorage() {
-            try {
-                const data = {
-                    discoveredLinksMap: Array.from(discoveredLinksMap.entries()),
-                    reverseLinkMap: Array.from(reverseLinkMap.entries()),
-                    timestamp: new Date().toISOString()
-                };
-                localStorage.setItem('starsUnifierGems', JSON.stringify(data));
-            } catch (e) { console.error('Failed to save gems:', e); }
-        }
-
+        // --- Categorization ---
         function categorizeRepo(repo) {
             const text = `${repo.name} ${repo.description || ''} ${repo.language || ''}`.toLowerCase();
+            if (text.includes('chain') || text.includes('multi-agent') || text.includes('agentic') || text.includes('pipeline') || text.includes('orchestrator')) return "Agent Chains & Multi-Agent";
             if (text.includes('rag') || text.includes('semantic search') || text.includes('chunk') || text.includes('vector') || text.includes('embedding')) return "RAG & Semantic Search";
             if (text.includes('trading') || text.includes('finance') || text.includes('market') || text.includes('kronos') || text.includes('alice')) return "AI Finance & Trading";
             if (text.includes('n8n') || text.includes('automation') || text.includes('workflow')) return "Automation & Workflows";
@@ -342,9 +292,71 @@
             return "Other";
         }
 
-        // ==========================================================
-        // 1. GITHUB API: USED *ONLY* FOR FETCHING STARS
-        // ==========================================================
+        const categoryColors = {
+            "Agent Chains & Multi-Agent": "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20",
+            "AI Agents & Coding Assistants": "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
+            "LLM Tooling & Proxies": "bg-violet-500/10 text-violet-400 border-violet-500/20 hover:bg-violet-500/20",
+            "RAG & Semantic Search": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20",
+            "AI Finance & Trading": "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
+            "Automation & Workflows": "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20",
+            "Learning Resources": "bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20",
+            "MLOps & Deployment": "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20",
+            "Audio AI & Signal": "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20 hover:bg-fuchsia-500/20",
+            "Other": "bg-zinc-700/50 text-zinc-300 border-zinc-600 hover:bg-zinc-700"
+        };
+
+        function getCategoryClass(category) { return categoryColors[category] || categoryColors["Other"]; }
+
+        // --- Cache Functions ---
+        function loadFromCache() {
+            try {
+                const cached = localStorage.getItem(CACHE_KEY);
+                if (!cached) return null;
+                const parsed = JSON.parse(cached);
+                if (Date.now() - parsed.timestamp < CACHE_DURATION_MS) {
+                    return parsed.data;
+                } else {
+                    localStorage.removeItem(CACHE_KEY);
+                    return null;
+                }
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function saveToCache(data) {
+            try {
+                localStorage.setItem(CACHE_KEY, JSON.stringify({
+                    timestamp: Date.now(),
+                    data: data
+                }));
+            } catch (e) {
+                console.warn("Failed to save to cache", e);
+            }
+        }
+
+        function clearCache() {
+            localStorage.removeItem(CACHE_KEY);
+            readmeSessionCache.clear();
+            discoveredLinksMap.clear();
+            reverseLinkMap.clear();
+            showToast('Cache cleared successfully. Reloading data...', 'success');
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // --- API & Data Fetching ---
+        function updateQuotaUI() {
+            const el = document.getElementById('api-quota-display');
+            if (!el) return;
+            const { limit, remaining } = apiQuota;
+            el.textContent = `API: ${remaining}/${limit}`;
+            el.className = `hidden md:flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border ${
+                remaining > 30 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                remaining > 10 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                'bg-red-500/10 text-red-400 border-red-500/20'
+            }`;
+        }
+
         async function fetchGitHubStars() {
             const grid = document.getElementById('repo-grid');
             grid.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-16 text-zinc-400">
@@ -359,14 +371,15 @@
 
                 while (true) {
                     const res = await fetch(`https://api.github.com/users/stav888/starred?per_page=${perPage}&page=${page}`);
-                    
-                    const remaining = res.headers.get('X-RateLimit-Remaining');
-                    const limit = res.headers.get('X-RateLimit-Limit');
-                    if (remaining) apiQuotaRemaining = parseInt(remaining);
-                    if (limit) apiQuotaLimit = parseInt(limit);
-                    updateAPIQuotaDisplay();
-                    
                     if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+                    
+                    // Quota Tracking
+                    const limit = res.headers.get('X-RateLimit-Limit');
+                    const remaining = res.headers.get('X-RateLimit-Remaining');
+                    if (limit) apiQuota.limit = parseInt(limit, 10);
+                    if (remaining) apiQuota.remaining = parseInt(remaining, 10);
+                    updateQuotaUI();
+
                     const data = await res.json();
                     if (data.length === 0) break;
                     allRepos = allRepos.concat(data);
@@ -386,20 +399,25 @@
                     github: item.html_url,
                     linkedReposCount: 0,
                     linkedRepos: [],
+                    reverseLinkCount: 0,
                     readmeScanned: false
                 }));
 
                 updateStats(allRepos);
+                saveToCache(repos);
                 return repos;
             } catch (error) {
                 console.error("Failed to fetch GitHub stars:", error);
                 let errorMessage = `Could not load stars from GitHub.`;
-                if (error.message.includes('403')) errorMessage = `<strong>GitHub rate limit reached (403)</strong><br>Wait ~1 hour.`;
+                if (error.message.includes('403')) {
+                    errorMessage = `<strong>GitHub rate limit reached (403)</strong><br>Wait ~1 hour or use a Personal Access Token.`;
+                }
                 document.getElementById('repo-grid').innerHTML = `<div class="col-span-full text-center py-12 text-red-400">
                     <i class="fa-solid fa-exclamation-triangle text-3xl mb-3"></i>
                     <p>${errorMessage}</p>
                     <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-2xl text-sm">Retry</button>
                 </div>`;
+                showToast('Failed to load data from GitHub', 'error');
                 return [];
             }
         }
@@ -411,28 +429,25 @@
 
             const categories = new Set();
             const langCount = {};
-            let aiCount = 0;
             
             allGitHubRepos.forEach(r => {
                 const cat = categorizeRepo(r);
                 if (cat) categories.add(cat);
                 const lang = r.language || 'N/A';
                 langCount[lang] = (langCount[lang] || 0) + 1;
-                if (['AI Agents & Coding Assistants', 'LLM Tooling & Proxies', 'RAG & Semantic Search', 'AI Finance & Trading', 'Automation & Workflows'].includes(cat)) aiCount++;
             });
 
             document.getElementById('stat-categories').textContent = categories.size;
+            
             let topLang = 'N/A', max = 0;
             Object.keys(langCount).forEach(lang => { if (langCount[lang] > max) { max = langCount[lang]; topLang = lang; } });
             document.getElementById('stat-toplang').textContent = topLang;
-            document.getElementById('stat-ai').textContent = aiCount;
+            
             updateDiscoveredStat();
         }
 
         function updateDiscoveredStat() {
             document.getElementById('stat-discovered').textContent = discoveredLinksMap.size;
-            document.getElementById('gems-table-count').textContent = discoveredLinksMap.size;
-            saveGemsToStorage();
         }
 
         function updateRepoCount() {
@@ -440,23 +455,7 @@
             if (countEl && repos) countEl.textContent = `(${repos.length} repos)`;
         }
 
-        let currentFilter = { search: '', category: null };
-        let currentModalRepo = null;
-
-        const categoryColors = {
-            "AI Agents & Coding Assistants": "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
-            "LLM Tooling & Proxies": "bg-violet-500/10 text-violet-400 border-violet-500/20 hover:bg-violet-500/20",
-            "RAG & Semantic Search": "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20",
-            "AI Finance & Trading": "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20",
-            "Automation & Workflows": "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20",
-            "Learning Resources": "bg-sky-500/10 text-sky-400 border-sky-500/20 hover:bg-sky-500/20",
-            "MLOps & Deployment": "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20",
-            "Audio AI & Signal": "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20 hover:bg-fuchsia-500/20",
-            "Other": "bg-zinc-700/50 text-zinc-300 border-zinc-600 hover:bg-zinc-700"
-        };
-
-        function getCategoryClass(category) { return categoryColors[category] || categoryColors["Other"]; }
-
+        // --- Rendering ---
         function renderCategoryPills() {
             const container = document.getElementById('category-pills');
             container.innerHTML = '';
@@ -466,8 +465,8 @@
 
             sortedCategories.forEach(category => {
                 const pill = document.createElement('div');
-                pill.className = `category-pill inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 text-xs font-medium border rounded-3xl ${getCategoryClass(category)}`;
-                if (currentFilter.category === category) pill.classList.add('active', '!bg-indigo-600', '!text-white', '!border-indigo-600');
+                pill.className = `category-pill inline-flex items-center gap-2 px-4 py-1.5 text-xs font-medium border rounded-3xl ${getCategoryClass(category)}`;
+                if (currentFilter.category === category) pill.classList.add('active');
                 pill.innerHTML = `<span>${category}</span><span class="px-2 py-px text-[10px] font-mono bg-black/30 rounded-2xl">${counts[category]}</span>`;
                 pill.onclick = () => {
                     currentFilter.category = (currentFilter.category === category) ? null : category;
@@ -484,7 +483,9 @@
             const countEl = document.getElementById('repo-count');
             grid.innerHTML = '';
 
-            if (countEl) countEl.textContent = (reposToShow.length === repos.length) ? `(${repos.length} repos)` : `(${reposToShow.length} / ${repos.length} repos)`;
+            if (countEl) {
+                countEl.textContent = (reposToShow.length === repos.length) ? `(${repos.length} repos)` : `(${reposToShow.length} / ${repos.length} repos)`;
+            }
 
             if (reposToShow.length === 0) {
                 grid.classList.add('hidden');
@@ -499,16 +500,17 @@
             reposToShow.forEach(repo => {
                 const card = document.createElement('div');
                 card.id = `repo-card-${repo.id}`;
-                card.className = `repo-card bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-2xl sm:rounded-3xl p-4 sm:p-5 flex flex-col cursor-pointer group`;
+                card.className = `repo-card bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-5 flex flex-col cursor-pointer group`;
                 const categoryClass = getCategoryClass(repo.category);
-                const repoKey = `${repo.owner.toLowerCase()}/${repo.name.toLowerCase()}`;
-                const linkedFromSources = reverseLinkMap.get(repoKey);
-                const linkedFromCount = linkedFromSources ? linkedFromSources.size : 0;
                 
+                const text = `${repo.name} ${repo.description || ''}`.toLowerCase();
+                const isChain = repo.linkedReposCount >= 4 || text.includes('chain');
+                const reverseCount = repo.reverseLinkCount || 0;
+
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-3">
-                        <div class="min-w-0 flex-1 mr-2">
-                            <div class="font-semibold text-base sm:text-lg tracking-tight group-hover:text-indigo-400 transition-colors truncate">${repo.name}</div>
+                        <div class="min-w-0 flex-1 pr-2">
+                            <div class="font-semibold text-lg tracking-tight group-hover:text-indigo-400 transition-colors truncate">${repo.name}</div>
                             <div class="text-xs text-zinc-500 truncate">${repo.owner}</div>
                         </div>
                         <div class="flex items-center text-right flex-shrink-0">
@@ -518,13 +520,30 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-xs sm:text-sm text-zinc-300 line-clamp-3 flex-1 mb-4">${repo.description}</p>
-                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-auto">
-                        <div class="px-2 sm:px-3 py-px text-[10px] font-medium rounded-2xl border ${categoryClass}">${repo.category}</div>
-                        <div class="px-2 sm:px-3 py-px text-[10px] font-mono bg-zinc-800 text-zinc-400 rounded-2xl">${repo.language}</div>
-                        ${repo.linkedReposCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos"><i class="fa-solid fa-link text-xs"></i><span class="font-semibold">${repo.linkedReposCount}</span></div>` : ''}
-                        ${linkedFromCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-violet-900/30 text-violet-400 rounded-2xl border border-violet-700/50" title="Linked from ${linkedFromCount} other starred repos"><i class="fa-solid fa-inbox text-xs"></i><span class="font-semibold">${linkedFromCount}</span></div>` : ''}
-                        <div class="ml-auto text-[10px] text-zinc-500 font-mono">${repo.date}</div>
+                    <p class="text-sm text-zinc-300 line-clamp-3 flex-1 mb-4">${repo.description}</p>
+                    <div class="mt-auto">
+                        <div class="flex flex-wrap items-center gap-2 mb-2">
+                            <div class="px-3 py-px text-[10px] font-medium rounded-2xl border ${categoryClass}">${repo.category}</div>
+                            <div class="px-3 py-px text-[10px] font-mono bg-zinc-800 text-zinc-400 rounded-2xl">${repo.language}</div>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 items-center">
+                            ${repo.linkedReposCount > 0 ? `
+                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos">
+                                <i class="fa-solid fa-link text-xs"></i>
+                                <span class="font-semibold">${repo.linkedReposCount}</span>
+                            </div>` : ''}
+                            ${reverseCount > 0 ? `
+                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Referenced by ${reverseCount} other repos">
+                                <i class="fa-solid fa-inbox text-xs"></i>
+                                <span class="font-semibold">${reverseCount}</span>
+                            </div>` : ''}
+                            ${isChain ? `
+                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Chain/Multi-Agent pattern detected">
+                                <i class="fa-solid fa-link text-xs"></i>
+                                <span class="font-semibold">CHAIN</span>
+                            </div>` : ''}
+                            <div class="ml-auto text-[10px] text-zinc-500 font-mono">${repo.date}</div>
+                        </div>
                     </div>
                 `;
                 card.onclick = () => openModal(repo);
@@ -536,6 +555,7 @@
             const searchInput = document.getElementById('search-input').value.toLowerCase().trim();
             currentFilter.search = searchInput;
             let filtered = repos;
+
             if (currentFilter.category) filtered = filtered.filter(r => r.category === currentFilter.category);
             if (searchInput.length > 0) {
                 filtered = filtered.filter(repo => {
@@ -561,6 +581,7 @@
             renderCategoryPills();
         }
 
+        // --- Modal Logic ---
         function openModal(repo) {
             currentModalRepo = repo;
             const modal = document.getElementById('modal');
@@ -568,7 +589,7 @@
                 <div class="flex items-start gap-4">
                     <div class="min-w-0">
                         <div class="font-display text-2xl sm:text-3xl font-semibold tracking-tighter truncate">${repo.name}</div>
-                        <div class="flex items-center gap-2 text-sm flex-wrap">
+                        <div class="flex items-center gap-2 text-sm mt-1">
                             <span class="text-zinc-400">${repo.owner}</span>
                             <a href="${repo.github}" target="_blank" class="github-link text-xs flex items-center gap-1 text-indigo-400 hover:text-indigo-300"><i class="fa-brands fa-github"></i><span>GitHub</span></a>
                         </div>
@@ -577,124 +598,85 @@
             `;
             const categoryClass = getCategoryClass(repo.category);
             
-            let linksHtml = '<p class="text-xs text-zinc-500 italic"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Scanning README via CORS...</p>';
+            let linksHtml = '<p class="text-xs text-zinc-500 italic">Scanning in background... Links will appear here shortly.</p>';
             if (repo.readmeScanned) {
                 if (repo.linkedReposCount > 0) {
-                    linksHtml = repo.linkedRepos.map(l => `<a href="${l.url}" target="_blank" class="block py-1 text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-2 text-sm"><i class="fa-brands fa-github fa-sm"></i><span>${l.owner}/${l.name}</span></a>`).join('');
+                    linksHtml = repo.linkedRepos.map(l => `
+                        <a href="${l.url}" target="_blank" class="block py-1 text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-2 text-sm">
+                            <i class="fa-brands fa-github fa-sm"></i> 
+                            <span class="truncate">${l.owner}/${l.name}</span>
+                        </a>`).join('');
                 } else {
                     linksHtml = '<p class="text-xs text-zinc-500">No other GitHub repository links found in this README.</p>';
                 }
             }
 
             document.getElementById('modal-body').innerHTML = `
-                <div class="flex flex-wrap gap-2 sm:gap-3 items-center">
-                    <div class="px-3 sm:px-4 py-1 text-xs sm:text-sm font-medium border rounded-3xl ${categoryClass}">${repo.category}</div>
-                    <div class="px-3 sm:px-4 py-1 text-xs sm:text-sm font-mono bg-zinc-800 text-zinc-300 rounded-3xl flex items-center gap-2"><i class="fa-solid fa-code"></i><span>${repo.language}</span></div>
-                    <div class="px-3 sm:px-4 py-1 text-xs sm:text-sm flex items-center gap-2 text-amber-400"><i class="fa-solid fa-star"></i><span class="font-semibold">${repo.stars.toLocaleString()} stars</span></div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <div class="px-4 py-1 text-sm font-medium border rounded-3xl ${categoryClass}">${repo.category}</div>
+                    <div class="px-4 py-1 text-sm font-mono bg-zinc-800 text-zinc-300 rounded-3xl flex items-center gap-2"><i class="fa-solid fa-code"></i><span>${repo.language}</span></div>
+                    <div class="px-4 py-1 text-sm flex items-center gap-2 text-amber-400"><i class="fa-solid fa-star"></i><span class="font-semibold">${repo.stars.toLocaleString()} stars</span></div>
                 </div>
                 <div>
                     <h4 class="font-semibold text-sm tracking-wider text-zinc-400 mb-2">DESCRIPTION</h4>
                     <p class="text-zinc-200 leading-relaxed">${repo.description}</p>
                 </div>
                 <div class="pt-4 border-t border-zinc-800">
-                    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
-                        <div class="text-xs uppercase tracking-[1px] text-zinc-500 flex items-center gap-2"><i class="fa-solid fa-link text-emerald-400"></i>LINKS TO OTHER REPOS IN README</div>
-                        <button onclick="forceScanReadme('${repo.owner}', '${repo.name}', ${repo.id})" class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center gap-1 transition-colors">
-                            <i class="fa-solid fa-rotate-right fa-fw"></i><span>${repo.readmeScanned ? 'Re-Scan' : 'Scan Now'}</span>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="text-xs uppercase tracking-[1px] text-zinc-500">LINKS TO OTHER REPOS IN README</div>
+                        <button onclick="forceScanReadme('${repo.owner}', '${repo.name}', ${repo.id})" 
+                                class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center gap-1 transition-colors">
+                            <i class="fa-solid fa-rotate-right fa-fw"></i>
+                            <span>${repo.readmeScanned ? 'Re-Scan' : 'Scan Now'}</span>
                         </button>
                     </div>
-                    <div id="linked-repos-list-${repo.id}" class="min-h-[40px] text-sm space-y-1">${linksHtml}</div>
+                    <div id="linked-repos-list-${repo.id}" class="min-h-[40px] text-sm space-y-1 max-h-60 overflow-y-auto">
+                        ${linksHtml}
+                    </div>
                 </div>
             `;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-
-            if (!repo.readmeScanned) {
-                performScan(repo.owner, repo.name, repo.id, true);
-            }
         }
 
-        // ==========================================================
-        // 2. ROBUST CORS/PROXY ONLY README FETCHER (FIXED)
-        // ==========================================================
-        async function fetchReadmeCORSOnly(owner, repo) {
-            const cacheKey = `${owner}/${repo}`.toLowerCase();
-            if (readmeSessionCache.has(cacheKey)) return readmeSessionCache.get(cacheKey);
-
-            const branches = ['main', 'master'];
-            // Crucial fix: GitHub raw URLs are case-sensitive. We must try variations.
-            const filenames = ['README.md', 'readme.md', 'Readme.md'];
-            const proxies = [
-                'https://corsproxy.io/?',
-                'https://api.allorigins.win/raw?url=',
-                'https://api.codetabs.com/v1/proxy?quest='
-            ];
-
-            const promises = [];
-            for (const branch of branches) {
-                for (const filename of filenames) {
-                    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${filename}`;
-                    for (const proxy of proxies) {
-                        promises.push(
-                            fetch(proxy + encodeURIComponent(rawUrl), { signal: AbortSignal.timeout(5000) }) // Increased timeout to 5s
-                                .then(async res => {
-                                    if (res.ok) {
-                                        const text = await res.text();
-                                        if (text && text.length > 100 && 
-                                            !text.includes('404: Not Found') && 
-                                            !text.includes('Cannot GET') && 
-                                            !text.includes('<!DOCTYPE html>')) {
-                                            return text;
-                                        }
-                                    }
-                                    return null;
-                                })
-                                .catch(() => null)
-                        );
-                    }
-                }
-            }
-
-            const results = await Promise.all(promises);
-            const validText = results.find(text => text !== null);
-            
-            if (validText) {
-                const result = { text: validText, method: 'cors' };
-                readmeSessionCache.set(cacheKey, result);
-                return result;
-            }
-
-            const failedResult = { text: null, method: 'failed' };
-            readmeSessionCache.set(cacheKey, failedResult);
-            return failedResult;
+        function closeModal() {
+            document.getElementById('modal').classList.remove('flex');
+            document.getElementById('modal').classList.add('hidden');
+            currentModalRepo = null;
         }
 
-        // ==========================================================
-        // 3. SMART PRIORITY SCANNING & PROCESSING
-        // ==========================================================
-        async function performScan(owner, name, repoId, isManual = false) {
+        function openGitHubFromModal() {
+            if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
+        }
+
+        // --- Scanning Logic (Exception to API rule as per requirements) ---
+        async function performScan(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
-            if (repo && repo.readmeScanned) {
-                if (isManual && currentModalRepo && currentModalRepo.id === repoId) openModal(currentModalRepo);
-                return repo.linkedRepos;
-            }
+            if (repo && repo.readmeScanned) return repo.linkedRepos;
 
-            if (isManual && currentModalRepo && currentModalRepo.id === repoId) {
-                const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
-                if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Scanning via CORS...</p>';
+            const cacheKey = `${owner}/${name}`.toLowerCase();
+            if (readmeSessionCache.has(cacheKey)) {
+                const cachedResult = readmeSessionCache.get(cacheKey);
+                if (repo) {
+                    repo.linkedReposCount = cachedResult.length;
+                    repo.linkedRepos = cachedResult;
+                    repo.readmeScanned = true;
+                    updateRepoCardUI(repoId);
+                }
+                return cachedResult;
             }
 
             try {
-                const { text: readmeText } = await fetchReadmeCORSOnly(owner, name);
-                
-                if (!readmeText) {
-                    if (repo) repo.readmeScanned = true;
-                    if (isManual && currentModalRepo && currentModalRepo.id === repoId) {
-                        document.getElementById(`linked-repos-list-${repoId}`).innerHTML = '<p class="text-xs text-zinc-500">Could not fetch README via CORS proxies. The repo might be private or lack a README.</p>';
-                    }
-                    return [];
+                const response = await fetch(`https://api.github.com/repos/${owner}/${name}/readme`, {
+                    headers: { 'Accept': 'application/vnd.github.v3.raw' }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 403) throw new Error('Rate limit');
+                    throw new Error('No README or API error');
                 }
 
+                const readmeText = await response.text();
                 const regex = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\/[^)\s#"'`]*)?/g;
                 const matches = [...readmeText.matchAll(regex)];
 
@@ -709,32 +691,43 @@
                     if (!uniqueLinked.has(key) && !(o.toLowerCase() === owner.toLowerCase() && r.toLowerCase() === name.toLowerCase())) {
                         uniqueLinked.set(key, { owner: o, name: r, url: `https://github.com/${o}/${r}` });
                         
-                        if (!discoveredLinksMap.has(key)) discoveredLinksMap.set(key, new Set());
+                        // Update global discovery map
+                        if (!discoveredLinksMap.has(key)) {
+                            discoveredLinksMap.set(key, new Set());
+                        }
                         discoveredLinksMap.get(key).add(`${owner}/${name}`);
-                        
-                        if (!reverseLinkMap.has(key)) reverseLinkMap.set(key, new Set());
-                        reverseLinkMap.get(key).add(name);
+
+                        // Update Reverse Link Map for target repo if it exists in our list
+                        const targetRepo = repos.find(rep => rep.owner.toLowerCase() === o.toLowerCase() && rep.name.toLowerCase() === r.toLowerCase());
+                        if (targetRepo) {
+                            targetRepo.reverseLinkCount = (targetRepo.reverseLinkCount || 0) + 1;
+                            reverseLinkMap.set(targetRepo.id, targetRepo.reverseLinkCount);
+                            updateRepoCardUI(targetRepo.id);
+                        }
                     }
                 });
 
                 const linkedList = Array.from(uniqueLinked.values());
+                
                 if (repo) {
                     repo.linkedReposCount = linkedList.length;
                     repo.linkedRepos = linkedList;
                     repo.readmeScanned = true;
                 }
 
+                readmeSessionCache.set(cacheKey, linkedList);
                 updateRepoCardUI(repoId);
-                if (isManual && currentModalRepo && currentModalRepo.id === repoId) {
+                
+                if (currentModalRepo && currentModalRepo.id === repoId) {
                     openModal(currentModalRepo);
                 }
-                
                 updateDiscoveredStat();
-                if (!isScanning) filterRepos(); 
 
                 return linkedList;
             } catch (err) {
-                console.error(`Scan failed for ${owner}/${name}:`, err);
+                if (err.message === 'Rate limit') {
+                    showToast('GitHub API rate limit reached. Some scans may be skipped.', 'error');
+                }
                 return [];
             }
         }
@@ -742,41 +735,54 @@
         function updateRepoCardUI(repoId) {
             const card = document.getElementById(`repo-card-${repoId}`);
             if (!card) return;
+            
             const repo = repos.find(r => r.id === repoId);
             if (!repo) return;
 
-            const oldLinkBadge = card.querySelector('.fa-link')?.parentElement;
-            if (oldLinkBadge) oldLinkBadge.remove();
-            const oldInboxBadge = card.querySelector('.fa-inbox')?.parentElement;
-            if (oldInboxBadge) oldInboxBadge.remove();
-
-            const repoKey = `${repo.owner.toLowerCase()}/${repo.name.toLowerCase()}`;
-            const linkedFromSources = reverseLinkMap.get(repoKey);
-            const linkedFromCount = linkedFromSources ? linkedFromSources.size : 0;
             const metaDiv = card.querySelector('.mt-auto');
-            
-            if (repo.linkedReposCount > 0) {
-                const badge = document.createElement('div');
-                badge.className = 'flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50';
-                badge.innerHTML = `<i class="fa-solid fa-link text-xs"></i><span class="font-semibold">${repo.linkedReposCount}</span>`;
-                metaDiv.insertBefore(badge, metaDiv.lastElementChild);
-            }
+            if (!metaDiv) return;
 
-            if (linkedFromCount > 0) {
-                const badge = document.createElement('div');
-                badge.className = 'flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-violet-900/30 text-violet-400 rounded-2xl border border-violet-700/50';
-                badge.innerHTML = `<i class="fa-solid fa-inbox text-xs"></i><span class="font-semibold">${linkedFromCount}</span>`;
-                metaDiv.insertBefore(badge, metaDiv.lastElementChild);
-            }
+            // Remove old dynamic badges
+            const oldBadges = metaDiv.querySelectorAll('.dynamic-badge-container');
+            oldBadges.forEach(b => b.remove());
+
+            const text = `${repo.name} ${repo.description || ''}`.toLowerCase();
+            const isChain = repo.linkedReposCount >= 4 || text.includes('chain');
+            const reverseCount = repo.reverseLinkCount || 0;
+
+            const badgesHtml = `
+                <div class="dynamic-badge-container flex flex-wrap gap-1.5 items-center">
+                    ${repo.linkedReposCount > 0 ? `
+                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos">
+                        <i class="fa-solid fa-link text-xs"></i>
+                        <span class="font-semibold">${repo.linkedReposCount}</span>
+                    </div>` : ''}
+                    ${reverseCount > 0 ? `
+                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Referenced by ${reverseCount} other repos">
+                        <i class="fa-solid fa-inbox text-xs"></i>
+                        <span class="font-semibold">${reverseCount}</span>
+                    </div>` : ''}
+                    ${isChain ? `
+                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Chain/Multi-Agent pattern detected">
+                        <i class="fa-solid fa-link text-xs"></i>
+                        <span class="font-semibold">CHAIN</span>
+                    </div>` : ''}
+                </div>
+            `;
+
+            const dateEl = metaDiv.lastElementChild;
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = badgesHtml;
+            metaDiv.insertBefore(tempDiv.firstElementChild, dateEl);
         }
 
         async function forceScanReadme(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
-            if (repo) {
-                repo.readmeScanned = false;
-                readmeSessionCache.delete(`${owner}/${name}`.toLowerCase());
-            }
-            await performScan(owner, name, repoId, true);
+            if (repo) repo.readmeScanned = false;
+            const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
+            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Scanning...</p>';
+            
+            await performScan(owner, name, repoId);
         }
 
         async function runSmartScan() {
@@ -790,38 +796,25 @@
             const statusText = document.getElementById('scan-status-text');
             const statusMsg = document.getElementById('scan-status-msg');
             statusText.classList.remove('hidden');
-            
-            repos.forEach(r => r.readmeScanned = false);
-            readmeSessionCache.clear();
-            const initialGemsCount = discoveredLinksMap.size;
+            statusMsg.textContent = 'Identifying high-value list repositories...';
 
-            const sortedRepos = [...repos].sort((a, b) => {
-                const aIsList = a.name.toLowerCase().match(/awesome|list|resources|collection|curated/) || (a.description && a.description.toLowerCase().match(/awesome|list|resources|collection|curated/));
-                const bIsList = b.name.toLowerCase().match(/awesome|list|resources|collection|curated/) || (b.description && b.description.toLowerCase().match(/awesome|list|resources|collection|curated/));
-                if (aIsList && !bIsList) return -1;
-                if (!aIsList && bIsList) return 1;
-                return b.stars - a.stars;
-            });
+            const priorityRepos = repos.filter(r => 
+                r.name.toLowerCase().match(/awesome|list|resources|collection|curated/) || 
+                (r.description && r.description.toLowerCase().match(/awesome|list|resources|collection|curated/))
+            );
 
-            const totalRepos = sortedRepos.length;
-            let scannedCount = 0;
-            statusMsg.textContent = `Scanning 0/${totalRepos} repos via CORS... (Gems: ${discoveredLinksMap.size})`;
+            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists instantly...`;
 
-            const batchSize = 10; 
-            for (let i = 0; i < totalRepos; i += batchSize) {
-                const batch = sortedRepos.slice(i, i + batchSize);
-                await Promise.all(batch.map(repo => 
-                    performScan(repo.owner, repo.name, repo.id, false).then(() => {
-                        scannedCount++;
-                        statusMsg.textContent = `Scanning ${scannedCount}/${totalRepos} via CORS... (Found: ${discoveredLinksMap.size} gems)`;
-                    })
-                ));
-                await new Promise(r => setTimeout(r, 150));
+            const batchSize = 10;
+            for (let i = 0; i < priorityRepos.length; i += batchSize) {
+                const batch = priorityRepos.slice(i, i + batchSize);
+                await Promise.all(batch.map(repo => performScan(repo.owner, repo.name, repo.id)));
+                await new Promise(r => setTimeout(r, 300)); 
             }
 
-            const newGems = discoveredLinksMap.size - initialGemsCount;
-            statusMsg.textContent = `Scan complete! Found ${newGems} new gems. Total: ${discoveredLinksMap.size}`;
-            
+            statusMsg.textContent = `Instant scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
+            showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} new repositories.`, 'success');
+
             isScanning = false;
             btn.innerHTML = `<i class="fa-solid fa-check"></i><span class="hidden sm:inline">Scan Complete</span>`;
             btn.classList.replace('text-amber-400', 'text-emerald-400');
@@ -832,58 +825,55 @@
                 btn.innerHTML = originalBtnHTML;
                 btn.classList.replace('text-emerald-400', 'text-amber-400');
                 btn.classList.replace('border-emerald-500/30', 'border-amber-500/30');
-            }, 4000);
+            }, 3000);
         }
 
-        function clearCacheAndRescan() {
-            if (confirm('Are you sure? This will clear all saved gems and force a full rescan.')) {
-                localStorage.removeItem('starsUnifierGems');
-                discoveredLinksMap.clear();
-                reverseLinkMap.clear();
-                readmeSessionCache.clear();
-                repos.forEach(r => r.readmeScanned = false);
-                updateDiscoveredStat();
-                closeDiscoveredModal();
-                runSmartScan();
-            }
-        }
-
+        // --- Discovered Modal ---
         function showDiscoveredModal() {
             const modal = document.getElementById('discovered-modal');
             const list = document.getElementById('discovered-list');
             list.innerHTML = '';
-            
+
             if (discoveredLinksMap.size === 0) {
-                list.innerHTML = `<div class="text-center text-zinc-400 py-12"><i class="fa-solid fa-wand-magic-sparkles text-4xl mb-3 text-zinc-600"></i><p>No hidden gems discovered yet.</p><p class="text-sm mt-2">Click "Smart Scan" to find repositories linked in READMEs.</p></div>`;
+                list.innerHTML = `<div class="text-center text-zinc-400 py-8">No hidden gems discovered yet. Click "Smart Scan" to find links in your awesome lists!</div>`;
             } else {
                 const header = document.createElement('div');
                 header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3';
-                header.innerHTML = `<i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i><div><div class="font-semibold text-indigo-300">Scan Summary</div><div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${discoveredLinksMap.size}</span> unique repositories across your starred lists.</div></div>`;
+                header.innerHTML = `
+                    <i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i>
+                    <div>
+                        <div class="font-semibold text-indigo-300">Scan Summary</div>
+                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${discoveredLinksMap.size}</span> unique repositories across your starred lists.</div>
+                    </div>
+                `;
                 list.appendChild(header);
-                
+
                 discoveredLinksMap.forEach((sourcesSet, url) => {
                     const parts = url.split('/');
                     const owner = parts[parts.length - 2];
                     const name = parts[parts.length - 1];
                     const cleanUrl = `https://github.com/${owner}/${name}`;
                     const sources = Array.from(sourcesSet).join(', ');
-                    
+
                     const item = document.createElement('div');
-                    item.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-600 transition-colors gap-3';
+                    item.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-600 transition-colors gap-3';
                     item.innerHTML = `
                         <div class="flex items-start gap-3 flex-1 min-w-0">
-                            <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0"><i class="fa-brands fa-github text-xl"></i></div>
-                            <div class="min-w-0 flex-1">
+                            <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0">
+                                <i class="fa-brands fa-github text-xl"></i>
+                            </div>
+                            <div class="min-w-0">
                                 <div class="font-semibold text-zinc-200 truncate">${name}</div>
                                 <div class="text-xs text-zinc-500 mb-1.5 truncate">${owner}</div>
-                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-medium max-w-full">
+                                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-medium">
                                     <i class="fa-solid fa-link"></i>
                                     <span class="truncate">Found in: <span class="text-amber-300 font-semibold">${sources}</span></span>
                                 </div>
                             </div>
                         </div>
                         <a href="${cleanUrl}" target="_blank" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 flex-shrink-0">
-                            <span>View Repo</span><i class="fa-solid fa-external-link-alt text-xs"></i>
+                            <span>View Repo</span>
+                            <i class="fa-solid fa-external-link-alt text-xs"></i>
                         </a>
                     `;
                     list.appendChild(item);
@@ -898,88 +888,159 @@
             document.getElementById('discovered-modal').classList.add('hidden');
         }
 
-        function closeModal() {
-            document.getElementById('modal').classList.remove('flex');
-            document.getElementById('modal').classList.add('hidden');
-        }
-
-        function openGitHubFromModal() {
-            if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
+        // --- Export & Share Functions ---
+        function exportData() {
+            const dataStr = JSON.stringify(repos, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', `stars-unifier-stav888-${new Date().toISOString().slice(0,10)}.json`);
+            link.click();
+            showToast(`Exported ${repos.length} repositories`, 'success');
         }
 
         function exportGemsJSON() {
-            if (discoveredLinksMap.size === 0) { alert('No gems to export'); return; }
-            const gems = [];
-            discoveredLinksMap.forEach((sourcesSet, url) => {
-                const parts = url.split('/');
-                gems.push({ owner: parts[parts.length - 2], name: parts[parts.length - 1], url, foundIn: Array.from(sourcesSet) });
-            });
-            const blob = new Blob([JSON.stringify(gems, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `hidden-gems-${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
+            const gems = Array.from(discoveredLinksMap.entries()).map(([url, sources]) => ({
+                url,
+                sources: Array.from(sources),
+                owner: url.split('/')[3] || 'unknown',
+                name: url.split('/')[4] || 'unknown'
+            }));
+            if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
+            
+            const dataStr = JSON.stringify(gems, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const link = document.createElement('a');
+            link.setAttribute('href', dataUri);
+            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.json`);
+            link.click();
+            showToast('Gems exported to JSON', 'success');
         }
 
         function exportGemsCSV() {
-            if (discoveredLinksMap.size === 0) { alert('No gems to export'); return; }
-            let csv = 'Owner,Name,URL,Found In\n';
-            discoveredLinksMap.forEach((sourcesSet, url) => {
-                const parts = url.split('/');
-                csv += `"${parts[parts.length - 2]}","${parts[parts.length - 1]}","${url}","${Array.from(sourcesSet).join('; ')}"\n`;
-            });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-            a.download = `hidden-gems-${new Date().toISOString().slice(0,10)}.csv`;
-            a.click();
+            const gems = Array.from(discoveredLinksMap.entries()).map(([url, sources]) => ({
+                url,
+                sources: Array.from(sources).join(' | '),
+                owner: url.split('/')[3] || 'unknown',
+                name: url.split('/')[4] || 'unknown'
+            }));
+            if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
+            
+            const headers = Object.keys(gems[0]);
+            const csvContent = [
+                headers.join(','),
+                ...gems.map(row => headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.csv`);
+            link.click();
+            showToast('Gems exported to CSV', 'success');
         }
 
-        function copyGemsLink() {
-            if (discoveredLinksMap.size === 0) { alert('No gems to share'); return; }
-            const gems = [];
-            discoveredLinksMap.forEach((sourcesSet, url) => gems.push({ url, sources: Array.from(sourcesSet) }));
-            try {
-                const shareUrl = `${window.location.href.split('?')[0]}?gems=${btoa(JSON.stringify(gems))}`;
-                navigator.clipboard.writeText(shareUrl).then(() => alert('Share link copied!')).catch(() => console.log("Share Link:\n", shareUrl));
-            } catch (e) { console.error("Error generating share link:", e); }
+        function generateShareLink() {
+            const state = {
+                discovered: Array.from(discoveredLinksMap.entries()).map(([url, sources]) => [url, Array.from(sources)]),
+                timestamp: Date.now()
+            };
+            const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
+            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast('Share link copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy link', 'error');
+            });
+        }
+
+        function loadSharedData() {
+            const params = new URLSearchParams(window.location.search);
+            const shareData = params.get('share');
+            if (shareData) {
+                try {
+                    const decoded = JSON.parse(decodeURIComponent(atob(shareData)));
+                    discoveredLinksMap.clear();
+                    decoded.discovered.forEach(([url, sources]) => {
+                        discoveredLinksMap.set(url, new Set(sources));
+                    });
+                    updateDiscoveredStat();
+                    showToast('Loaded shared data successfully!', 'success');
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                } catch (e) {
+                    showToast('Invalid share link', 'error');
+                }
+            }
+        }
+
+        // --- Utilities ---
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-3xl shadow-xl flex items-center gap-3 text-sm z-[100] transition-opacity duration-300 ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { 
+                toast.style.opacity = '0'; 
+                setTimeout(() => toast.remove(), 300); 
+            }, 2800);
         }
 
         async function refreshData() {
-            const btn = document.querySelector('button[onclick="refreshData()"]');
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span class="hidden sm:inline">Syncing...</span>`;
-            btn.disabled = true;
+            const btns = Array.from(document.querySelectorAll('button')).filter(b => b.innerHTML.toLowerCase().includes('refresh') || b.innerHTML.includes('sync'));
+            const originalHTMLs = btns.map(b => b.innerHTML);
+            btns.forEach(b => { b.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span class="hidden sm:inline">Syncing...</span>`; b.disabled = true; });
 
             try {
+                localStorage.removeItem(CACHE_KEY);
+                discoveredLinksMap.clear();
+                reverseLinkMap.clear();
+                readmeSessionCache.clear();
+                
                 await fetchGitHubStars();
                 renderRepos(repos);
                 renderCategoryPills();
                 updateRepoCount();
                 document.getElementById('last-sync-time').textContent = 'just now';
-                readmeSessionCache.clear();
-                isScanning = false;
+                
+                showToast('Successfully synced! Click "Smart Scan" to find new links.', 'success');
             } catch (err) {
-                console.error('Failed to refresh:', err);
+                showToast('Failed to refresh from GitHub', 'error');
             } finally {
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
+                btns.forEach((b, i) => { 
+                    b.innerHTML = originalHTMLs[i] || `<i class="fa-solid fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>`; 
+                    b.disabled = false; 
+                });
             }
         }
 
+        // --- Initialization ---
         async function initializeApp() {
             initializeTailwind();
             document.getElementById('last-sync-time').textContent = 'just now';
-            const cacheValid = loadGemsFromStorage();
             
-            await fetchGitHubStars();
-            renderRepos(repos);
-            renderCategoryPills();
-            updateRepoCount();
-            updateDiscoveredStat();
-
-            if (!cacheValid) {
-                setTimeout(() => runSmartScan(), 1500);
+            loadSharedData();
+            
+            const cachedData = loadFromCache();
+            if (cachedData) {
+                repos = cachedData;
+                updateStats(repos);
+                renderRepos(repos);
+                renderCategoryPills();
+                updateRepoCount();
+                showToast('Loaded from cache (7 days valid)', 'success');
+            } else {
+                await fetchGitHubStars();
+                renderRepos(repos);
+                renderCategoryPills();
+                updateRepoCount();
             }
+
+            setTimeout(() => {
+                if (discoveredLinksMap.size === 0) {
+                    runSmartScan();
+                }
+            }, 1500);
 
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
