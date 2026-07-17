@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stars Unifier • stav888</title>
+    
+    <!-- AI-Scannable Meta Tags (Dynamic) -->
+    <meta name="total-stars" content="0" id="meta-total-stars">
+    <meta name="hidden-gems" content="0" id="meta-hidden-gems">
+    <meta name="last-updated" content="" id="meta-last-updated">
+    <meta name="ai-scan-data" content='{"totalStars":0,"hiddenGems":0}' id="meta-ai-scan-data">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -28,9 +35,9 @@
 </head>
 <body class="bg-zinc-950 text-zinc-200">
     
-    <!-- AI-Scannable Hidden Gems Data -->
+    <!-- AI-Scannable Hidden Gems Data (Rich JSON) -->
     <script type="application/json" id="hidden-gems-data">
-        {"gems": [], "lastUpdated": null, "totalStars": 0, "newGemsCount": 0}
+        {"totalStars": 0, "newGemsCount": 0, "lastUpdated": null, "gems": []}
     </script>
 
     <!-- Top Navigation -->
@@ -51,7 +58,6 @@
                 </div>
                 
                 <div class="flex items-center gap-x-2 flex-wrap justify-end">
-                    <!-- Clickable API Quota Display -->
                     <div id="api-quota-display" onclick="checkApiQuota()" class="flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800 cursor-pointer hover:bg-zinc-800 hover:text-zinc-200 transition-colors" title="Click to check current API quota">
                         API: --/-- <i class="fa-solid fa-rotate ml-2 text-[10px]"></i>
                     </div>
@@ -100,7 +106,7 @@
                             <button onclick="generateShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
                                 <i class="fa-solid fa-share-nodes text-blue-400 w-5"></i> Copy Share Link
                             </button>
-                        </div>
+        </div>
                     </div>
                 </div>
             </div>
@@ -248,7 +254,7 @@
         </div>
     </div>
 
-    <!-- Discovered Repos Global Modal (Optimized with Pagination & Search) -->
+    <!-- Discovered Repos Global Modal -->
     <div id="discovered-modal" onclick="if (event.target.id === 'discovered-modal') closeDiscoveredModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-3xl rounded-3xl overflow-hidden modal flex flex-col max-h-[85vh]">
             <div class="px-6 pt-6 pb-4 flex justify-between items-start border-b border-zinc-800 bg-zinc-900">
@@ -264,7 +270,6 @@
                 </button>
             </div>
             
-            <!-- NEW: Search Bar for Hidden Gems -->
             <div class="px-6 pt-4 pb-2 border-b border-zinc-800 bg-zinc-900">
                 <div class="relative">
                     <div class="absolute left-3 top-1/2 -mt-2 text-zinc-500"><i class="fa-solid fa-search"></i></div>
@@ -305,7 +310,7 @@
         let currentFilter = { search: '', category: null };
         let currentModalRepo = null;
         let discoveredModalPage = 0;
-        let gemsSearchQuery = ''; // NEW: State for gems search
+        let gemsSearchQuery = '';
         const ITEMS_PER_PAGE = 50;
 
         // --- Categorization ---
@@ -344,26 +349,15 @@
                 const cached = localStorage.getItem(CACHE_KEY);
                 if (!cached) return null;
                 const parsed = JSON.parse(cached);
-                if (Date.now() - parsed.timestamp < CACHE_DURATION_MS) {
-                    return parsed.data;
-                } else {
-                    localStorage.removeItem(CACHE_KEY);
-                    return null;
-                }
-            } catch (e) {
+                if (Date.now() - parsed.timestamp < CACHE_DURATION_MS) return parsed.data;
+                localStorage.removeItem(CACHE_KEY);
                 return null;
-            }
+            } catch (e) { return null; }
         }
 
         function saveToCache(data) {
-            try {
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: data
-                }));
-            } catch (e) {
-                console.warn("Failed to save to cache", e);
-            }
+            try { localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: data })); } 
+            catch (e) { console.warn("Failed to save to cache", e); }
         }
 
         function loadGemsFromCache() {
@@ -371,19 +365,12 @@
                 const cached = localStorage.getItem(GEMS_CACHE_KEY);
                 if (!cached) return false;
                 const parsed = JSON.parse(cached);
-                
                 discoveredLinksMap.clear();
-                parsed.discovered.forEach(([key, sources]) => {
-                    discoveredLinksMap.set(key, new Set(sources));
-                });
-                
+                parsed.discovered.forEach(([key, sources]) => discoveredLinksMap.set(key, new Set(sources)));
                 scannedGemsSet.clear();
                 parsed.scannedGems.forEach(key => scannedGemsSet.add(key));
-                
                 return true;
-            } catch (e) {
-                return false;
-            }
+            } catch (e) { return false; }
         }
 
         function saveGemsToCache() {
@@ -394,9 +381,7 @@
                     timestamp: Date.now()
                 };
                 localStorage.setItem(GEMS_CACHE_KEY, JSON.stringify(data));
-            } catch (e) {
-                console.warn("Failed to save gems to cache", e);
-            }
+            } catch (e) { console.warn("Failed to save gems to cache", e); }
         }
 
         function clearCache() {
@@ -410,33 +395,47 @@
             setTimeout(() => location.reload(), 1000);
         }
 
-        // --- AI Scannable Data Update ---
-        function updateHiddenGemsDataTag() {
-            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
-                const parts = key.split('/');
-                const owner = parts[0] || 'unknown';
-                const name = parts[1] || 'unknown';
-                const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
-                
-                return {
-                    url: `https://github.com/${owner}/${name}`,
-                    owner,
-                    name,
-                    sources: Array.from(sources),
-                    isNewAndNotInStars: !isInStars
-                };
-            });
+        // --- AI Meta Tags Update (NEW & IMPROVED) ---
+        function updateAIMetaTags() {
+            const total = repos.length || 0;
+            const gems = discoveredLinksMap.size || 0;
+            const now = new Date().toISOString();
+
+            const metaTotal = document.getElementById('meta-total-stars');
+            const metaGems = document.getElementById('meta-hidden-gems');
+            const metaUpdated = document.getElementById('meta-last-updated');
+            const metaJson = document.getElementById('meta-ai-scan-data');
+
+            if (metaTotal) metaTotal.setAttribute('content', total);
+            if (metaGems) metaGems.setAttribute('content', gems);
+            if (metaUpdated) metaUpdated.setAttribute('content', now);
             
-            const data = {
-                gems: gems,
-                lastUpdated: new Date().toISOString(),
-                totalStars: repos.length,
-                newGemsCount: gems.filter(g => g.isNewAndNotInStars).length
-            };
-            
-            const scriptTag = document.getElementById('hidden-gems-data');
-            if (scriptTag) {
-                scriptTag.textContent = JSON.stringify(data, null, 2);
+            if (metaJson) {
+                metaJson.setAttribute('content', JSON.stringify({
+                    totalStars: total,
+                    hiddenGems: gems,
+                    lastUpdated: now
+                }));
+            }
+
+            const hiddenScript = document.getElementById('hidden-gems-data');
+            if (hiddenScript) {
+                const gemsArray = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
+                    const parts = key.split('/');
+                    return { 
+                        url: `https://github.com/${parts[0]}/${parts[1]}`, 
+                        owner: parts[0] || 'unknown', 
+                        name: parts[1] || 'unknown', 
+                        sources: Array.from(sources),
+                        isNewAndNotInStars: !repos.some(r => r.owner.toLowerCase() === (parts[0]||'').toLowerCase() && r.name.toLowerCase() === (parts[1]||'').toLowerCase())
+                    };
+                });
+                hiddenScript.textContent = JSON.stringify({
+                    totalStars: total,
+                    newGemsCount: gems,
+                    lastUpdated: now,
+                    gems: gemsArray
+                });
             }
         }
 
@@ -453,21 +452,16 @@
             }`;
         }
 
-        // NEW: Function to check API quota on click without reloading
         async function checkApiQuota() {
             const el = document.getElementById('api-quota-display');
             const originalHTML = el.innerHTML;
             el.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Checking...';
-            
             try {
-                // Lightweight request just to get headers
                 const res = await fetch('https://api.github.com/rate_limit');
                 const limit = res.headers.get('X-RateLimit-Limit');
                 const remaining = res.headers.get('X-RateLimit-Remaining');
-                
                 if (limit) apiQuota.limit = parseInt(limit, 10);
                 if (remaining) apiQuota.remaining = parseInt(remaining, 10);
-                
                 updateQuotaUI();
                 showToast('API Quota updated', 'success');
             } catch (e) {
@@ -523,14 +517,12 @@
 
                 updateStats(allRepos);
                 saveToCache(repos);
-                updateHiddenGemsDataTag();
+                updateAIMetaTags(); // UPDATED: Called here
                 return repos;
             } catch (error) {
                 console.error("Failed to fetch GitHub stars:", error);
                 let errorMessage = `Could not load stars from GitHub.`;
-                if (error.message.includes('403')) {
-                    errorMessage = `<strong>GitHub rate limit reached (403)</strong><br>Wait ~1 hour or use a Personal Access Token.`;
-                }
+                if (error.message.includes('403')) errorMessage = `<strong>GitHub rate limit reached (403)</strong><br>Wait ~1 hour or use a Personal Access Token.`;
                 document.getElementById('repo-grid').innerHTML = `<div class="col-span-full text-center py-12 text-red-400">
                     <i class="fa-solid fa-exclamation-triangle text-3xl mb-3"></i>
                     <p>${errorMessage}</p>
@@ -548,7 +540,6 @@
 
             const categories = new Set();
             const langCount = {};
-            
             allGitHubRepos.forEach(r => {
                 const cat = categorizeRepo(r);
                 if (cat) categories.add(cat);
@@ -557,18 +548,18 @@
             });
 
             document.getElementById('stat-categories').textContent = categories.size;
-            
             let topLang = 'N/A', max = 0;
             Object.keys(langCount).forEach(lang => { if (langCount[lang] > max) { max = langCount[lang]; topLang = lang; } });
             document.getElementById('stat-toplang').textContent = topLang;
             
             updateDiscoveredStat();
+            updateAIMetaTags(); // UPDATED: Called here
         }
 
         function updateDiscoveredStat() {
             document.getElementById('stat-discovered').textContent = discoveredLinksMap.size;
-            updateHiddenGemsDataTag();
             saveGemsToCache();
+            updateAIMetaTags(); // UPDATED: Called here
         }
 
         function updateRepoCount() {
@@ -604,9 +595,7 @@
             const countEl = document.getElementById('repo-count');
             grid.innerHTML = '';
 
-            if (countEl) {
-                countEl.textContent = (reposToShow.length === repos.length) ? `(${repos.length} repos)` : `(${reposToShow.length} / ${repos.length} repos)`;
-            }
+            if (countEl) countEl.textContent = (reposToShow.length === repos.length) ? `(${repos.length} repos)` : `(${reposToShow.length} / ${repos.length} repos)`;
 
             if (reposToShow.length === 0) {
                 grid.classList.add('hidden');
@@ -623,7 +612,6 @@
                 card.id = `repo-card-${repo.id}`;
                 card.className = `repo-card bg-zinc-900 border border-zinc-800 hover:border-zinc-700 rounded-3xl p-5 flex flex-col cursor-pointer group`;
                 const categoryClass = getCategoryClass(repo.category);
-                
                 const text = `${repo.name} ${repo.description || ''}`.toLowerCase();
                 const isChain = repo.linkedReposCount >= 4 || text.includes('chain');
                 const reverseCount = repo.reverseLinkCount || 0;
@@ -648,21 +636,9 @@
                             <div class="px-3 py-px text-[10px] font-mono bg-zinc-800 text-zinc-400 rounded-2xl">${repo.language}</div>
                         </div>
                         <div class="flex flex-wrap gap-1.5 items-center">
-                            ${repo.linkedReposCount > 0 ? `
-                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos">
-                                <i class="fa-solid fa-link text-xs"></i>
-                                <span class="font-semibold">${repo.linkedReposCount}</span>
-                            </div>` : ''}
-                            ${reverseCount > 0 ? `
-                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Referenced by ${reverseCount} other repos">
-                                <i class="fa-solid fa-inbox text-xs"></i>
-                                <span class="font-semibold">${reverseCount}</span>
-                            </div>` : ''}
-                            ${isChain ? `
-                            <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Chain/Multi-Agent pattern detected">
-                                <i class="fa-solid fa-link text-xs"></i>
-                                <span class="font-semibold">CHAIN</span>
-                            </div>` : ''}
+                            ${repo.linkedReposCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos"><i class="fa-solid fa-link text-xs"></i><span class="font-semibold">${repo.linkedReposCount}</span></div>` : ''}
+                            ${reverseCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Referenced by ${reverseCount} other repos"><i class="fa-solid fa-inbox text-xs"></i><span class="font-semibold">${reverseCount}</span></div>` : ''}
+                            ${isChain ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Chain/Multi-Agent pattern detected"><i class="fa-solid fa-link text-xs"></i><span class="font-semibold">CHAIN</span></div>` : ''}
                             <div class="ml-auto text-[10px] text-zinc-500 font-mono">${repo.date}</div>
                         </div>
                     </div>
@@ -676,7 +652,6 @@
             const searchInput = document.getElementById('search-input').value.toLowerCase().trim();
             currentFilter.search = searchInput;
             let filtered = repos;
-
             if (currentFilter.category) filtered = filtered.filter(r => r.category === currentFilter.category);
             if (searchInput.length > 0) {
                 filtered = filtered.filter(repo => {
@@ -718,15 +693,10 @@
                 </div>
             `;
             const categoryClass = getCategoryClass(repo.category);
-            
             let linksHtml = '<p class="text-xs text-zinc-500 italic">Pending scan. Click "Scan Now" or run "Smart Scan".</p>';
             if (repo.readmeScanned) {
                 if (repo.linkedReposCount > 0) {
-                    linksHtml = repo.linkedRepos.map(l => `
-                        <a href="${l.url}" target="_blank" class="block py-1 text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-2 text-sm">
-                            <i class="fa-brands fa-github fa-sm"></i> 
-                            <span class="truncate">${l.owner}/${l.name}</span>
-                        </a>`).join('');
+                    linksHtml = repo.linkedRepos.map(l => `<a href="${l.url}" target="_blank" class="block py-1 text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-2 text-sm"><i class="fa-brands fa-github fa-sm"></i><span class="truncate">${l.owner}/${l.name}</span></a>`).join('');
                 } else {
                     linksHtml = '<p class="text-xs text-zinc-500">No other GitHub repository links found in this README.</p>';
                 }
@@ -745,15 +715,11 @@
                 <div class="pt-4 border-t border-zinc-800">
                     <div class="flex items-center justify-between mb-2">
                         <div class="text-xs uppercase tracking-[1px] text-zinc-500">LINKS TO OTHER REPOS IN README</div>
-                        <button onclick="forceScanReadme('${repo.owner}', '${repo.name}', ${repo.id})" 
-                                class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center gap-1 transition-colors">
-                            <i class="fa-solid fa-rotate-right fa-fw"></i>
-                            <span>${repo.readmeScanned ? 'Re-Scan' : 'Scan Now'}</span>
+                        <button onclick="forceScanReadme('${repo.owner}', '${repo.name}', ${repo.id})" class="text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-2xl flex items-center gap-1 transition-colors">
+                            <i class="fa-solid fa-rotate-right fa-fw"></i><span>${repo.readmeScanned ? 'Re-Scan' : 'Scan Now'}</span>
                         </button>
                     </div>
-                    <div id="linked-repos-list-${repo.id}" class="min-h-[40px] text-sm space-y-1 max-h-60 overflow-y-auto">
-                        ${linksHtml}
-                    </div>
+                    <div id="linked-repos-list-${repo.id}" class="min-h-[40px] text-sm space-y-1 max-h-60 overflow-y-auto">${linksHtml}</div>
                 </div>
             `;
             modal.classList.remove('hidden');
@@ -770,17 +736,13 @@
             if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
         }
 
-        // --- Scanning Logic (Ultra-fast CORS via /HEAD/README.md) ---
+        // --- Scanning Logic ---
         async function fetchReadmeFromRaw(owner, name) {
             try {
                 const url = `https://raw.githubusercontent.com/${owner}/${name}/HEAD/README.md`;
                 const response = await fetch(url);
-                if (response.ok) {
-                    return await response.text();
-                }
-            } catch (e) {
-                console.warn(`Fetch failed for ${owner}/${name}`);
-            }
+                if (response.ok) return await response.text();
+            } catch (e) { console.warn(`Fetch failed for ${owner}/${name}`); }
             return null;
         }
 
@@ -802,7 +764,6 @@
 
             try {
                 const readmeText = await fetchReadmeFromRaw(owner, name);
-                
                 if (!readmeText) {
                     if (repo) repo.readmeScanned = true;
                     return [];
@@ -810,10 +771,8 @@
 
                 const regex = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\/[^)\s#"'`]*)?/g;
                 const matches = [...readmeText.matchAll(regex)];
-
                 const uniqueLinked = new Map();
-                const newGemsFound = [];
-                
+
                 matches.forEach(match => {
                     const o = match[1];
                     const r = match[2];
@@ -823,11 +782,7 @@
                     
                     if (!uniqueLinked.has(key) && !(o.toLowerCase() === owner.toLowerCase() && r.toLowerCase() === name.toLowerCase())) {
                         uniqueLinked.set(key, { owner: o, name: r, url: `https://github.com/${o}/${r}` });
-                        
-                        if (!discoveredLinksMap.has(key)) {
-                            discoveredLinksMap.set(key, new Set());
-                            newGemsFound.push(key);
-                        }
+                        if (!discoveredLinksMap.has(key)) discoveredLinksMap.set(key, new Set());
                         discoveredLinksMap.get(key).add(`${owner}/${name}`);
 
                         const targetRepo = repos.find(rep => rep.owner.toLowerCase() === o.toLowerCase() && rep.name.toLowerCase() === r.toLowerCase());
@@ -840,7 +795,6 @@
                 });
 
                 const linkedList = Array.from(uniqueLinked.values());
-                
                 if (repo) {
                     repo.linkedReposCount = linkedList.length;
                     repo.linkedRepos = linkedList;
@@ -849,26 +803,21 @@
 
                 readmeSessionCache.set(cacheKey, linkedList);
                 updateRepoCardUI(repoId);
-                
-                if (currentModalRepo && currentModalRepo.id === repoId) {
-                    openModal(currentModalRepo);
-                }
+                if (currentModalRepo && currentModalRepo.id === repoId) openModal(currentModalRepo);
                 updateDiscoveredStat();
 
-                return { linkedList, newGemsFound };
+                return linkedList;
             } catch (err) {
                 console.warn(`Scan failed for ${owner}/${name}:`, err.message);
-                return { linkedList: [], newGemsFound: [] };
+                return [];
             }
         }
 
         function updateRepoCardUI(repoId) {
             const card = document.getElementById(`repo-card-${repoId}`);
             if (!card) return;
-            
             const repo = repos.find(r => r.id === repoId);
             if (!repo) return;
-
             const metaDiv = card.querySelector('.mt-auto');
             if (!metaDiv) return;
 
@@ -881,24 +830,11 @@
 
             const badgesHtml = `
                 <div class="dynamic-badge-container flex flex-wrap gap-1.5 items-center">
-                    ${repo.linkedReposCount > 0 ? `
-                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50" title="README links to ${repo.linkedReposCount} other repos">
-                        <i class="fa-solid fa-link text-xs"></i>
-                        <span class="font-semibold">${repo.linkedReposCount}</span>
-                    </div>` : ''}
-                    ${reverseCount > 0 ? `
-                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Referenced by ${reverseCount} other repos">
-                        <i class="fa-solid fa-inbox text-xs"></i>
-                        <span class="font-semibold">${reverseCount}</span>
-                    </div>` : ''}
-                    ${isChain ? `
-                    <div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50" title="Chain/Multi-Agent pattern detected">
-                        <i class="fa-solid fa-link text-xs"></i>
-                        <span class="font-semibold">CHAIN</span>
-                    </div>` : ''}
+                    ${repo.linkedReposCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-green-900/30 text-green-400 rounded-2xl border border-green-700/50"><i class="fa-solid fa-link text-xs"></i><span class="font-semibold">${repo.linkedReposCount}</span></div>` : ''}
+                    ${reverseCount > 0 ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50"><i class="fa-solid fa-inbox text-xs"></i><span class="font-semibold">${reverseCount}</span></div>` : ''}
+                    ${isChain ? `<div class="flex items-center gap-1 px-1.5 py-px text-[10px] font-mono bg-purple-900/30 text-purple-400 rounded-2xl border border-purple-700/50"><i class="fa-solid fa-link text-xs"></i><span class="font-semibold">CHAIN</span></div>` : ''}
                 </div>
             `;
-
             const dateEl = metaDiv.lastElementChild;
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = badgesHtml;
@@ -909,16 +845,13 @@
             const repo = repos.find(r => r.id === repoId);
             if (repo) repo.readmeScanned = false;
             const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
-            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via CORS (raw.githubusercontent.com)...</p>';
-            
+            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via CORS...</p>';
             const result = await performScan(owner, name, repoId);
-            
             if (repo && !repo.readmeScanned) {
                 if (listContainer) listContainer.innerHTML = '<p class="text-xs text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Scan failed. No README found.</p>';
             }
         }
 
-        // --- Recursive Scanning (Optimized for Speed) ---
         async function scanDiscoveredGemsRecursively(maxDepth = 2) {
             let depth = 0;
             let queue = Array.from(discoveredLinksMap.keys()).filter(key => !scannedGemsSet.has(key));
@@ -926,29 +859,22 @@
             while (queue.length > 0 && depth < maxDepth) {
                 const currentQueue = [...queue];
                 queue = [];
-                
                 const statusMsg = document.getElementById('scan-status-msg');
-                if (statusMsg) {
-                    statusMsg.textContent = `Deep scan depth ${depth + 1}/${maxDepth}: Scanning ${currentQueue.length} gems...`;
-                }
+                if (statusMsg) statusMsg.textContent = `Deep scan depth ${depth + 1}/${maxDepth}: Scanning ${currentQueue.length} gems...`;
                 
                 const batchSize = 15;
                 for (let i = 0; i < currentQueue.length; i += batchSize) {
                     const batch = currentQueue.slice(i, i + batchSize);
-                    
                     await Promise.all(batch.map(async (key) => {
                         const parts = key.split('/');
                         const owner = parts[0];
                         const name = parts[1];
-                        
                         if (!owner || !name) return;
-                        
                         scannedGemsSet.add(key);
                         
                         try {
                             const readmeText = await fetchReadmeFromRaw(owner, name);
                             if (!readmeText) return;
-                            
                             const regex = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\/[^)\s#"'`]*)?/g;
                             const matches = [...readmeText.matchAll(regex)];
                             
@@ -962,19 +888,13 @@
                                 if (!discoveredLinksMap.has(newKey)) {
                                     discoveredLinksMap.set(newKey, new Set());
                                     discoveredLinksMap.get(newKey).add(`${owner}/${name}`);
-                                    
-                                    if (!scannedGemsSet.has(newKey)) {
-                                        queue.push(newKey);
-                                    }
+                                    if (!scannedGemsSet.has(newKey)) queue.push(newKey);
                                 } else {
                                     discoveredLinksMap.get(newKey).add(`${owner}/${name}`);
                                 }
                             });
-                            
                             updateDiscoveredStat();
-                        } catch (e) {
-                            console.warn(`Failed to scan gem ${owner}/${name}:`, e);
-                        }
+                        } catch (e) { console.warn(`Failed to scan gem ${owner}/${name}:`, e); }
                     }));
                 }
                 depth++;
@@ -1000,7 +920,6 @@
             );
 
             statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists (CORS, no API quota)...`;
-
             const batchSize = 15;
             for (let i = 0; i < priorityRepos.length; i += batchSize) {
                 const batch = priorityRepos.slice(i, i + batchSize);
@@ -1008,11 +927,12 @@
             }
 
             statusMsg.textContent = `Found ${discoveredLinksMap.size} gems. Starting deep scan...`;
-            
             await scanDiscoveredGemsRecursively(2);
 
             statusMsg.textContent = `Scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
             showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} repositories.`, 'success');
+
+            updateAIMetaTags(); // UPDATED: Called here at the end of scan
 
             isScanning = false;
             btn.innerHTML = `<i class="fa-solid fa-check"></i><span class="hidden sm:inline">Scan Complete</span>`;
@@ -1027,7 +947,7 @@
             }, 3000);
         }
 
-        // --- Discovered Modal (Optimized with Pagination & Search) ---
+        // --- Discovered Modal ---
         function showDiscoveredModal() {
             discoveredModalPage = 0;
             gemsSearchQuery = '';
@@ -1037,10 +957,9 @@
             document.getElementById('discovered-modal').classList.add('flex');
         }
 
-        // NEW: Filter function for gems search
         function filterDiscoveredGems() {
             gemsSearchQuery = document.getElementById('gems-search-input').value.toLowerCase().trim();
-            discoveredModalPage = 0; // Reset to first page on new search
+            discoveredModalPage = 0;
             renderDiscoveredPage();
         }
 
@@ -1050,12 +969,11 @@
             list.innerHTML = '';
 
             if (discoveredLinksMap.size === 0) {
-                list.innerHTML = `<div class="text-center text-zinc-400 py-8">No hidden gems discovered yet. Click "Smart Scan" to find links in your awesome lists!</div>`;
+                list.innerHTML = `<div class="text-center text-zinc-400 py-8">No hidden gems discovered yet. Click "Smart Scan" to find links!</div>`;
                 pagination.innerHTML = '';
                 return;
             }
 
-            // Apply search filter first
             let filteredKeys = Array.from(discoveredLinksMap.keys());
             if (gemsSearchQuery.length > 0) {
                 filteredKeys = filteredKeys.filter(key => {
@@ -1063,8 +981,7 @@
                     const owner = parts[0] || '';
                     const name = parts[1] || '';
                     const sources = Array.from(discoveredLinksMap.get(key)).join(', ').toLowerCase();
-                    const haystack = `${owner} ${name} ${sources}`.toLowerCase();
-                    return haystack.includes(gemsSearchQuery);
+                    return `${owner} ${name} ${sources}`.toLowerCase().includes(gemsSearchQuery);
                 });
             }
 
@@ -1075,12 +992,9 @@
 
             const newGemsCount = filteredKeys.filter(key => {
                 const parts = key.split('/');
-                const owner = parts[0] || '';
-                const name = parts[1] || '';
-                return !repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
+                return !repos.some(r => r.owner.toLowerCase() === (parts[0]||'').toLowerCase() && r.name.toLowerCase() === (parts[1]||'').toLowerCase());
             }).length;
 
-            // NEW: Added tip about recursive scanning
             const header = document.createElement('div');
             header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex flex-col gap-2';
             header.innerHTML = `
@@ -1088,12 +1002,12 @@
                     <i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i>
                     <div>
                         <div class="font-semibold text-indigo-300">Scan Summary</div>
-                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${filteredKeys.length}</span> unique repositories. <span class="text-emerald-400 font-bold">${newGemsCount}</span> are completely new (not in your Stars).</div>
+                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${filteredKeys.length}</span> unique repositories. <span class="text-emerald-400 font-bold">${newGemsCount}</span> are completely new.</div>
                     </div>
                 </div>
                 <div class="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2 text-xs text-amber-300">
                     <i class="fa-solid fa-lightbulb mt-0.5"></i>
-                    <span><strong>Pro Tip:</strong> Run "Smart Scan" again to recursively scan these discovered gems. This will read their READMEs and find even deeper repositories!</span>
+                    <span><strong>Pro Tip:</strong> Run "Smart Scan" again to recursively scan these discovered gems and find even deeper repositories!</span>
                 </div>
             `;
             list.appendChild(header);
@@ -1105,48 +1019,34 @@
                 const name = parts[1] || 'unknown';
                 const cleanUrl = `https://github.com/${owner}/${name}`;
                 const sources = Array.from(sourcesSet).join(', ');
-                
                 const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
-                const newBadge = !isInStars ? `<span class="ml-2 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">✨ NEW (Not in Stars)</span>` : '';
+                const newBadge = !isInStars ? `<span class="ml-2 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">✨ NEW</span>` : '';
 
                 const item = document.createElement('div');
                 item.className = 'flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-zinc-600 transition-colors gap-3';
                 item.innerHTML = `
                     <div class="flex items-start gap-3 flex-1 min-w-0">
-                        <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0">
-                            <i class="fa-brands fa-github text-xl"></i>
-                        </div>
+                        <div class="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 flex-shrink-0"><i class="fa-brands fa-github text-xl"></i></div>
                         <div class="min-w-0">
-                            <div class="font-semibold text-zinc-200 truncate flex items-center flex-wrap gap-1">
-                                ${name}
-                                ${newBadge}
-                            </div>
+                            <div class="font-semibold text-zinc-200 truncate flex items-center flex-wrap gap-1">${name}${newBadge}</div>
                             <div class="text-xs text-zinc-500 mb-1.5 truncate">${owner}</div>
                             <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-medium">
-                                <i class="fa-solid fa-link"></i>
-                                <span class="truncate">Found in: <span class="text-amber-300 font-semibold">${sources}</span></span>
+                                <i class="fa-solid fa-link"></i><span class="truncate">Found in: <span class="text-amber-300 font-semibold">${sources}</span></span>
                             </div>
                         </div>
                     </div>
                     <a href="${cleanUrl}" target="_blank" class="px-4 py-2 text-sm font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 flex-shrink-0">
-                        <span>View Repo</span>
-                        <i class="fa-solid fa-external-link-alt text-xs"></i>
+                        <span>View Repo</span><i class="fa-solid fa-external-link-alt text-xs"></i>
                     </a>
                 `;
                 list.appendChild(item);
             });
 
             pagination.innerHTML = `
-                <div class="text-sm text-zinc-400">
-                    Showing ${startIndex + 1}-${endIndex} of ${filteredKeys.length} gems
-                </div>
+                <div class="text-sm text-zinc-400">Showing ${startIndex + 1}-${endIndex} of ${filteredKeys.length} gems</div>
                 <div class="flex gap-2">
-                    <button onclick="changeDiscoveredPage(-1)" ${discoveredModalPage === 0 ? 'disabled' : ''} class="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
-                        <i class="fa-solid fa-chevron-left"></i> Previous
-                    </button>
-                    <button onclick="changeDiscoveredPage(1)" ${discoveredModalPage >= totalPages - 1 ? 'disabled' : ''} class="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
-                        Next <i class="fa-solid fa-chevron-right"></i>
-                    </button>
+                    <button onclick="changeDiscoveredPage(-1)" ${discoveredModalPage === 0 ? 'disabled' : ''} class="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors"><i class="fa-solid fa-chevron-left"></i> Previous</button>
+                    <button onclick="changeDiscoveredPage(1)" ${discoveredModalPage >= totalPages - 1 ? 'disabled' : ''} class="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">Next <i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             `;
         }
@@ -1156,11 +1056,7 @@
             if (gemsSearchQuery.length > 0) {
                 filteredKeys = filteredKeys.filter(key => {
                     const parts = key.split('/');
-                    const owner = parts[0] || '';
-                    const name = parts[1] || '';
-                    const sources = Array.from(discoveredLinksMap.get(key)).join(', ').toLowerCase();
-                    const haystack = `${owner} ${name} ${sources}`.toLowerCase();
-                    return haystack.includes(gemsSearchQuery);
+                    return `${parts[0]} ${parts[1]} ${Array.from(discoveredLinksMap.get(key)).join(', ')}`.toLowerCase().includes(gemsSearchQuery);
                 });
             }
             const totalPages = Math.ceil(filteredKeys.length / ITEMS_PER_PAGE) || 1;
@@ -1173,14 +1069,12 @@
             document.getElementById('discovered-modal').classList.add('hidden');
         }
 
-        // --- Markdown Export Functions ---
+        // --- Markdown Export Functions (WITH ROBUST FALLBACK) ---
         function generateGemsMarkdown() {
             let md = "# 🌟 Hidden Gems Discovered by Stars Unifier\n\n";
             md += `**Total Discovered:** ${discoveredLinksMap.size}\n`;
             md += `**Generated:** ${new Date().toLocaleString()}\n\n`;
-            
-            const newGems = [];
-            const existingGems = [];
+            const newGems = [], existingGems = [];
 
             discoveredLinksMap.forEach((sources, key) => {
                 const parts = key.split('/');
@@ -1189,33 +1083,47 @@
                 const url = `https://github.com/${owner}/${name}`;
                 const sourcesStr = Array.from(sources).join(', ');
                 const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
-                
                 const line = `- [**${owner}/${name}**](${url})\n  - *Found in:* ${sourcesStr}\n`;
-                
-                if (!isInStars) {
-                    newGems.push(line);
-                } else {
-                    existingGems.push(line);
-                }
+                if (!isInStars) newGems.push(line);
+                else existingGems.push(line);
             });
 
-            if (newGems.length > 0) {
-                md += "## ✨ NEW (Not in Stars)\n\n" + newGems.join('\n') + "\n";
-            }
-            if (existingGems.length > 0) {
-                md += "## 📌 Already in Stars\n\n" + existingGems.join('\n') + "\n";
-            }
-            
+            if (newGems.length > 0) md += "## ✨ NEW (Not in Stars)\n\n" + newGems.join('\n') + "\n";
+            if (existingGems.length > 0) md += "## 📌 Already in Stars\n\n" + existingGems.join('\n') + "\n";
             return md;
         }
 
         function copyGemsMarkdown() {
             const md = generateGemsMarkdown();
-            navigator.clipboard.writeText(md).then(() => {
+            if (!md) { showToast('No data to copy', 'error'); return; }
+            
+            // Modern API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(md).then(() => {
+                    showToast('Markdown copied to clipboard!', 'success');
+                }).catch(() => {
+                    fallbackCopy(md);
+                });
+            } else {
+                fallbackCopy(md);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
                 showToast('Markdown copied to clipboard!', 'success');
-            }).catch(() => {
-                showToast('Failed to copy Markdown', 'error');
-            });
+            } catch (err) {
+                showToast('Failed to copy. Please copy manually.', 'error');
+            }
+            document.body.removeChild(textArea);
         }
 
         function downloadGemsMarkdown() {
@@ -1242,15 +1150,9 @@
         function exportGemsJSON() {
             const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
                 const parts = key.split('/');
-                return {
-                    url: `https://github.com/${parts[0]}/${parts[1]}`,
-                    sources: Array.from(sources),
-                    owner: parts[0] || 'unknown',
-                    name: parts[1] || 'unknown'
-                };
+                return { url: `https://github.com/${parts[0]}/${parts[1]}`, sources: Array.from(sources), owner: parts[0] || 'unknown', name: parts[1] || 'unknown' };
             });
             if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
-            
             const dataStr = JSON.stringify(gems, null, 2);
             const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
             const link = document.createElement('a');
@@ -1263,21 +1165,11 @@
         function exportGemsCSV() {
             const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
                 const parts = key.split('/');
-                return {
-                    url: `https://github.com/${parts[0]}/${parts[1]}`,
-                    sources: Array.from(sources).join(' | '),
-                    owner: parts[0] || 'unknown',
-                    name: parts[1] || 'unknown'
-                };
+                return { url: `https://github.com/${parts[0]}/${parts[1]}`, sources: Array.from(sources).join(' | '), owner: parts[0] || 'unknown', name: parts[1] || 'unknown' };
             });
             if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
-            
             const headers = Object.keys(gems[0]);
-            const csvContent = [
-                headers.join(','),
-                ...gems.map(row => headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`).join(','))
-            ].join('\n');
-            
+            const csvContent = [headers.join(','), ...gems.map(row => headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`).join(','))].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -1287,18 +1179,10 @@
         }
 
         function generateShareLink() {
-            const state = {
-                discovered: Array.from(discoveredLinksMap.entries()).map(([key, sources]) => [key, Array.from(sources)]),
-                timestamp: Date.now()
-            };
+            const state = { discovered: Array.from(discoveredLinksMap.entries()).map(([key, sources]) => [key, Array.from(sources)]), timestamp: Date.now() };
             const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
             const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
-            
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast('Share link copied to clipboard!', 'success');
-            }).catch(() => {
-                showToast('Failed to copy link', 'error');
-            });
+            navigator.clipboard.writeText(shareUrl).then(() => showToast('Share link copied!', 'success')).catch(() => showToast('Failed to copy link', 'error'));
         }
 
         function loadSharedData() {
@@ -1308,15 +1192,12 @@
                 try {
                     const decoded = JSON.parse(decodeURIComponent(atob(shareData)));
                     discoveredLinksMap.clear();
-                    decoded.discovered.forEach(([key, sources]) => {
-                        discoveredLinksMap.set(key, new Set(sources));
-                    });
+                    decoded.discovered.forEach(([key, sources]) => discoveredLinksMap.set(key, new Set(sources)));
                     updateDiscoveredStat();
+                    updateAIMetaTags(); // UPDATED: Called here
                     showToast('Loaded shared data successfully!', 'success');
                     window.history.replaceState({}, document.title, window.location.pathname);
-                } catch (e) {
-                    showToast('Invalid share link', 'error');
-                }
+                } catch (e) { showToast('Invalid share link', 'error'); }
             }
         }
 
@@ -1326,10 +1207,7 @@
             toast.className = `fixed bottom-6 right-6 px-5 py-3 rounded-3xl shadow-xl flex items-center gap-3 text-sm z-[100] transition-opacity duration-300 ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`;
             toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span>`;
             document.body.appendChild(toast);
-            setTimeout(() => { 
-                toast.style.opacity = '0'; 
-                setTimeout(() => toast.remove(), 300); 
-            }, 2800);
+            setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 2800);
         }
 
         async function refreshData() {
@@ -1341,21 +1219,16 @@
                 localStorage.removeItem(CACHE_KEY);
                 readmeSessionCache.clear();
                 reverseLinkMap.clear();
-                
                 await fetchGitHubStars();
                 renderRepos(repos);
                 renderCategoryPills();
                 updateRepoCount();
                 document.getElementById('last-sync-time').textContent = 'just now';
-                
-                showToast('Successfully synced! Click "Smart Scan" to find new links.', 'success');
+                showToast('Successfully synced!', 'success');
             } catch (err) {
                 showToast('Failed to refresh from GitHub', 'error');
             } finally {
-                btns.forEach((b, i) => { 
-                    b.innerHTML = originalHTMLs[i] || `<i class="fa-solid fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>`; 
-                    b.disabled = false; 
-                });
+                btns.forEach((b, i) => { b.innerHTML = originalHTMLs[i] || `<i class="fa-solid fa-sync-alt"></i> <span class="hidden sm:inline">Refresh</span>`; b.disabled = false; });
             }
         }
 
@@ -1363,7 +1236,6 @@
         async function initializeApp() {
             initializeTailwind();
             document.getElementById('last-sync-time').textContent = 'just now';
-            
             loadSharedData();
             
             const gemsLoaded = loadGemsFromCache();
