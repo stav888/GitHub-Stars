@@ -24,10 +24,6 @@
         .stat-value { font-variant-numeric: tabular-nums; }
         .github-link { transition: color 0.1s ease; }
         .github-link:hover { color: #6366f1; }
-        .graph-node { cursor: pointer; transition: all 0.2s ease; }
-        .graph-node:hover { filter: brightness(1.3); }
-        .graph-link { stroke-opacity: 0.3; transition: stroke-opacity 0.2s ease; }
-        .graph-link:hover { stroke-opacity: 0.8; }
     </style>
 </head>
 <body class="bg-zinc-950 text-zinc-200">
@@ -55,15 +51,11 @@
                 </div>
                 
                 <div class="flex items-center gap-x-2 flex-wrap justify-end">
-                    <div id="api-quota-display" class="flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800">
-                        API: --/--
+                    <!-- Clickable API Quota Display -->
+                    <div id="api-quota-display" onclick="checkApiQuota()" class="flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800 cursor-pointer hover:bg-zinc-800 hover:text-zinc-200 transition-colors" title="Click to check current API quota">
+                        API: --/-- <i class="fa-solid fa-rotate ml-2 text-[10px]"></i>
                     </div>
                     
-                    <button onclick="showGraphModal()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-indigo-500/30 hover:border-indigo-500/60 transition-colors rounded-3xl text-indigo-400" title="View Relationship Graph">
-                        <i class="fa-solid fa-diagram-project"></i>
-                        <span class="hidden sm:inline">Graph</span>
-                    </button>
-
                     <button onclick="clearCache()" class="flex items-center gap-x-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium bg-zinc-900 hover:bg-zinc-800 border border-red-500/30 hover:border-red-500/60 transition-colors rounded-3xl text-red-400" title="Clear Cache & Rescan">
                         <i class="fa-solid fa-trash-can"></i>
                         <span class="hidden sm:inline">Clear Cache</span>
@@ -87,15 +79,22 @@
                             <span class="hidden sm:inline">Export</span>
                             <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
                         </button>
-                        <div class="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                        <div class="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                             <button onclick="exportData()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
                                 <i class="fa-solid fa-file-code text-indigo-400 w-5"></i> Export All Repos (JSON)
                             </button>
                             <button onclick="exportGemsJSON()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-gem text-amber-400 w-5"></i> Export Hidden Gems (JSON)
+                                <i class="fa-solid fa-file-code text-amber-400 w-5"></i> Export Hidden Gems (JSON)
                             </button>
                             <button onclick="exportGemsCSV()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
                                 <i class="fa-solid fa-file-csv text-emerald-400 w-5"></i> Export Hidden Gems (CSV)
+                            </button>
+                            <div class="border-t border-zinc-800 my-1"></div>
+                            <button onclick="copyGemsMarkdown()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-brands fa-markdown text-blue-400 w-5"></i> Copy Gems as Markdown
+                            </button>
+                            <button onclick="downloadGemsMarkdown()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-file-arrow-down text-blue-400 w-5"></i> Download Gems (.md)
                             </button>
                             <div class="border-t border-zinc-800 my-1"></div>
                             <button onclick="generateShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
@@ -249,7 +248,7 @@
         </div>
     </div>
 
-    <!-- Discovered Repos Global Modal (Optimized with Pagination) -->
+    <!-- Discovered Repos Global Modal (Optimized with Pagination & Search) -->
     <div id="discovered-modal" onclick="if (event.target.id === 'discovered-modal') closeDiscoveredModal()" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-3xl rounded-3xl overflow-hidden modal flex flex-col max-h-[85vh]">
             <div class="px-6 pt-6 pb-4 flex justify-between items-start border-b border-zinc-800 bg-zinc-900">
@@ -264,38 +263,22 @@
                     <i class="fa-solid fa-times text-xl"></i>
                 </button>
             </div>
+            
+            <!-- NEW: Search Bar for Hidden Gems -->
+            <div class="px-6 pt-4 pb-2 border-b border-zinc-800 bg-zinc-900">
+                <div class="relative">
+                    <div class="absolute left-3 top-1/2 -mt-2 text-zinc-500"><i class="fa-solid fa-search"></i></div>
+                    <input id="gems-search-input" type="text" placeholder="Search gems by name, owner, or source..."
+                           class="w-full bg-zinc-950 border border-zinc-700 focus:border-indigo-500 pl-9 pr-4 py-2 text-sm rounded-xl outline-none transition-colors"
+                           onkeyup="filterDiscoveredGems()">
+                </div>
+            </div>
+
             <div id="discovered-list" class="p-6 overflow-y-auto space-y-3 flex-1 bg-zinc-950/50"></div>
             <div id="discovered-pagination" class="px-6 py-3 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between"></div>
             <div class="px-6 py-4 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between">
                 <div class="text-xs text-zinc-500">Updates in real-time as scanning progresses.</div>
                 <button onclick="closeDiscoveredModal()" class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors">
-                    <span>Close</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Graph Visualization Modal -->
-    <div id="graph-modal" onclick="if (event.target.id === 'graph-modal') closeGraphModal()" class="hidden fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-900 border border-zinc-700 w-full max-w-6xl h-[90vh] rounded-3xl overflow-hidden modal flex flex-col">
-            <div class="px-6 pt-6 pb-4 flex justify-between items-start border-b border-zinc-800 bg-zinc-900">
-                <div>
-                    <div class="font-display text-xl sm:text-2xl font-semibold tracking-tighter flex items-center gap-2">
-                        <i class="fa-solid fa-diagram-project text-indigo-400"></i>
-                        Repository Relationship Graph
-                    </div>
-                    <p class="text-sm text-zinc-400 mt-1">Visual representation of connections between repositories</p>
-                </div>
-                <button onclick="closeGraphModal()" class="text-zinc-400 hover:text-white p-2 -mr-2 -mt-2">
-                    <i class="fa-solid fa-times text-xl"></i>
-                </button>
-            </div>
-            <div id="graph-container" class="flex-1 bg-zinc-950 overflow-hidden relative">
-                <svg id="graph-svg" class="w-full h-full"></svg>
-            </div>
-            <div class="px-6 py-4 bg-zinc-900 border-t border-zinc-800 flex items-center justify-between">
-                <div class="text-xs text-zinc-500">Click nodes to view repositories • Drag to pan • Scroll to zoom</div>
-                <button onclick="closeGraphModal()" class="flex items-center gap-x-2 px-5 py-2 text-sm font-medium bg-zinc-800 hover:bg-zinc-700 rounded-2xl transition-colors">
                     <span>Close</span>
                 </button>
             </div>
@@ -322,6 +305,7 @@
         let currentFilter = { search: '', category: null };
         let currentModalRepo = null;
         let discoveredModalPage = 0;
+        let gemsSearchQuery = ''; // NEW: State for gems search
         const ITEMS_PER_PAGE = 50;
 
         // --- Categorization ---
@@ -382,7 +366,6 @@
             }
         }
 
-        // --- Gems Cache Functions ---
         function loadGemsFromCache() {
             try {
                 const cached = localStorage.getItem(GEMS_CACHE_KEY);
@@ -462,12 +445,35 @@
             const el = document.getElementById('api-quota-display');
             if (!el) return;
             const { limit, remaining } = apiQuota;
-            el.textContent = `API: ${remaining}/${limit}`;
-            el.className = `flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border ${
-                remaining > 30 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                remaining > 10 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                'bg-red-500/10 text-red-400 border-red-500/20'
+            el.innerHTML = `API: ${remaining}/${limit} <i class="fa-solid fa-rotate ml-2 text-[10px]"></i>`;
+            el.className = `flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 border-zinc-800 cursor-pointer hover:bg-zinc-800 hover:text-zinc-200 transition-colors ${
+                remaining > 30 ? 'text-emerald-400 border-emerald-500/20' :
+                remaining > 10 ? 'text-amber-400 border-amber-500/20' :
+                'text-red-400 border-red-500/20'
             }`;
+        }
+
+        // NEW: Function to check API quota on click without reloading
+        async function checkApiQuota() {
+            const el = document.getElementById('api-quota-display');
+            const originalHTML = el.innerHTML;
+            el.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Checking...';
+            
+            try {
+                // Lightweight request just to get headers
+                const res = await fetch('https://api.github.com/rate_limit');
+                const limit = res.headers.get('X-RateLimit-Limit');
+                const remaining = res.headers.get('X-RateLimit-Remaining');
+                
+                if (limit) apiQuota.limit = parseInt(limit, 10);
+                if (remaining) apiQuota.remaining = parseInt(remaining, 10);
+                
+                updateQuotaUI();
+                showToast('API Quota updated', 'success');
+            } catch (e) {
+                showToast('Failed to check API quota', 'error');
+                el.innerHTML = originalHTML;
+            }
         }
 
         async function fetchGitHubStars() {
@@ -562,7 +568,7 @@
         function updateDiscoveredStat() {
             document.getElementById('stat-discovered').textContent = discoveredLinksMap.size;
             updateHiddenGemsDataTag();
-            saveGemsToCache(); // Save gems after each update
+            saveGemsToCache();
         }
 
         function updateRepoCount() {
@@ -764,19 +770,16 @@
             if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
         }
 
-        // --- Scanning Logic (Using raw.githubusercontent.com - NO API quota!) ---
+        // --- Scanning Logic (Ultra-fast CORS via /HEAD/README.md) ---
         async function fetchReadmeFromRaw(owner, name) {
-            const branches = ['main', 'master'];
-            for (const branch of branches) {
-                try {
-                    const url = `https://raw.githubusercontent.com/${owner}/${name}/${branch}/README.md`;
-                    const response = await fetch(url);
-                    if (response.ok) {
-                        return await response.text();
-                    }
-                } catch (e) {
-                    // Continue to next branch
+            try {
+                const url = `https://raw.githubusercontent.com/${owner}/${name}/HEAD/README.md`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    return await response.text();
                 }
+            } catch (e) {
+                console.warn(`Fetch failed for ${owner}/${name}`);
             }
             return null;
         }
@@ -801,7 +804,6 @@
                 const readmeText = await fetchReadmeFromRaw(owner, name);
                 
                 if (!readmeText) {
-                    console.warn(`No README found for ${owner}/${name}`);
                     if (repo) repo.readmeScanned = true;
                     return [];
                 }
@@ -907,7 +909,7 @@
             const repo = repos.find(r => r.id === repoId);
             if (repo) repo.readmeScanned = false;
             const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
-            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via raw.githubusercontent.com (CORS, no API quota)...</p>';
+            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via CORS (raw.githubusercontent.com)...</p>';
             
             const result = await performScan(owner, name, repoId);
             
@@ -916,7 +918,7 @@
             }
         }
 
-        // --- Recursive Scanning of Discovered Gems (Faster with larger batches) ---
+        // --- Recursive Scanning (Optimized for Speed) ---
         async function scanDiscoveredGemsRecursively(maxDepth = 2) {
             let depth = 0;
             let queue = Array.from(discoveredLinksMap.keys()).filter(key => !scannedGemsSet.has(key));
@@ -927,10 +929,10 @@
                 
                 const statusMsg = document.getElementById('scan-status-msg');
                 if (statusMsg) {
-                    statusMsg.textContent = `Deep scan depth ${depth + 1}/${maxDepth}: Scanning ${currentQueue.length} discovered gems...`;
+                    statusMsg.textContent = `Deep scan depth ${depth + 1}/${maxDepth}: Scanning ${currentQueue.length} gems...`;
                 }
                 
-                const batchSize = 30; // Increased from 10 to 30 for faster scanning
+                const batchSize = 15;
                 for (let i = 0; i < currentQueue.length; i += batchSize) {
                     const batch = currentQueue.slice(i, i + batchSize);
                     
@@ -974,10 +976,7 @@
                             console.warn(`Failed to scan gem ${owner}/${name}:`, e);
                         }
                     }));
-                    
-                    await new Promise(r => setTimeout(r, 100)); // Reduced delay from 200ms to 100ms
                 }
-                
                 depth++;
             }
         }
@@ -1000,16 +999,15 @@
                 (r.description && r.description.toLowerCase().match(/awesome|list|resources|collection|curated/))
             );
 
-            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists (via raw.githubusercontent.com)...`;
+            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists (CORS, no API quota)...`;
 
-            const batchSize = 30; // Increased from 10 to 30
+            const batchSize = 15;
             for (let i = 0; i < priorityRepos.length; i += batchSize) {
                 const batch = priorityRepos.slice(i, i + batchSize);
                 await Promise.all(batch.map(repo => performScan(repo.owner, repo.name, repo.id)));
-                await new Promise(r => setTimeout(r, 100)); // Reduced from 200ms to 100ms
             }
 
-            statusMsg.textContent = `Found ${discoveredLinksMap.size} gems. Starting deep scan of discovered repos...`;
+            statusMsg.textContent = `Found ${discoveredLinksMap.size} gems. Starting deep scan...`;
             
             await scanDiscoveredGemsRecursively(2);
 
@@ -1029,12 +1027,21 @@
             }, 3000);
         }
 
-        // --- Discovered Modal (Optimized with Pagination) ---
+        // --- Discovered Modal (Optimized with Pagination & Search) ---
         function showDiscoveredModal() {
             discoveredModalPage = 0;
+            gemsSearchQuery = '';
+            document.getElementById('gems-search-input').value = '';
             renderDiscoveredPage();
             document.getElementById('discovered-modal').classList.remove('hidden');
             document.getElementById('discovered-modal').classList.add('flex');
+        }
+
+        // NEW: Filter function for gems search
+        function filterDiscoveredGems() {
+            gemsSearchQuery = document.getElementById('gems-search-input').value.toLowerCase().trim();
+            discoveredModalPage = 0; // Reset to first page on new search
+            renderDiscoveredPage();
         }
 
         function renderDiscoveredPage() {
@@ -1048,32 +1055,49 @@
                 return;
             }
 
-            const allKeys = Array.from(discoveredLinksMap.keys());
-            const totalPages = Math.ceil(allKeys.length / ITEMS_PER_PAGE);
-            const startIndex = discoveredModalPage * ITEMS_PER_PAGE;
-            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allKeys.length);
-            const pageKeys = allKeys.slice(startIndex, endIndex);
+            // Apply search filter first
+            let filteredKeys = Array.from(discoveredLinksMap.keys());
+            if (gemsSearchQuery.length > 0) {
+                filteredKeys = filteredKeys.filter(key => {
+                    const parts = key.split('/');
+                    const owner = parts[0] || '';
+                    const name = parts[1] || '';
+                    const sources = Array.from(discoveredLinksMap.get(key)).join(', ').toLowerCase();
+                    const haystack = `${owner} ${name} ${sources}`.toLowerCase();
+                    return haystack.includes(gemsSearchQuery);
+                });
+            }
 
-            // Header with stats
-            const newGemsCount = allKeys.filter(key => {
+            const totalPages = Math.ceil(filteredKeys.length / ITEMS_PER_PAGE) || 1;
+            const startIndex = discoveredModalPage * ITEMS_PER_PAGE;
+            const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, filteredKeys.length);
+            const pageKeys = filteredKeys.slice(startIndex, endIndex);
+
+            const newGemsCount = filteredKeys.filter(key => {
                 const parts = key.split('/');
                 const owner = parts[0] || '';
                 const name = parts[1] || '';
                 return !repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
             }).length;
 
+            // NEW: Added tip about recursive scanning
             const header = document.createElement('div');
-            header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3';
+            header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex flex-col gap-2';
             header.innerHTML = `
-                <i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i>
-                <div>
-                    <div class="font-semibold text-indigo-300">Scan Summary</div>
-                    <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${discoveredLinksMap.size}</span> unique repositories. <span class="text-emerald-400 font-bold">${newGemsCount}</span> are completely new (not in your Stars).</div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-sparkles text-indigo-400 text-xl"></i>
+                    <div>
+                        <div class="font-semibold text-indigo-300">Scan Summary</div>
+                        <div class="text-sm text-zinc-400">Discovered <span class="text-white font-bold">${filteredKeys.length}</span> unique repositories. <span class="text-emerald-400 font-bold">${newGemsCount}</span> are completely new (not in your Stars).</div>
+                    </div>
+                </div>
+                <div class="mt-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start gap-2 text-xs text-amber-300">
+                    <i class="fa-solid fa-lightbulb mt-0.5"></i>
+                    <span><strong>Pro Tip:</strong> Run "Smart Scan" again to recursively scan these discovered gems. This will read their READMEs and find even deeper repositories!</span>
                 </div>
             `;
             list.appendChild(header);
 
-            // Render only current page items
             pageKeys.forEach(key => {
                 const sourcesSet = discoveredLinksMap.get(key);
                 const parts = key.split('/');
@@ -1112,10 +1136,9 @@
                 list.appendChild(item);
             });
 
-            // Pagination controls
             pagination.innerHTML = `
                 <div class="text-sm text-zinc-400">
-                    Showing ${startIndex + 1}-${endIndex} of ${allKeys.length} gems
+                    Showing ${startIndex + 1}-${endIndex} of ${filteredKeys.length} gems
                 </div>
                 <div class="flex gap-2">
                     <button onclick="changeDiscoveredPage(-1)" ${discoveredModalPage === 0 ? 'disabled' : ''} class="px-3 py-1 text-sm bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors">
@@ -1129,8 +1152,18 @@
         }
 
         function changeDiscoveredPage(delta) {
-            const allKeys = Array.from(discoveredLinksMap.keys());
-            const totalPages = Math.ceil(allKeys.length / ITEMS_PER_PAGE);
+            let filteredKeys = Array.from(discoveredLinksMap.keys());
+            if (gemsSearchQuery.length > 0) {
+                filteredKeys = filteredKeys.filter(key => {
+                    const parts = key.split('/');
+                    const owner = parts[0] || '';
+                    const name = parts[1] || '';
+                    const sources = Array.from(discoveredLinksMap.get(key)).join(', ').toLowerCase();
+                    const haystack = `${owner} ${name} ${sources}`.toLowerCase();
+                    return haystack.includes(gemsSearchQuery);
+                });
+            }
+            const totalPages = Math.ceil(filteredKeys.length / ITEMS_PER_PAGE) || 1;
             discoveredModalPage = Math.max(0, Math.min(totalPages - 1, discoveredModalPage + delta));
             renderDiscoveredPage();
         }
@@ -1140,137 +1173,59 @@
             document.getElementById('discovered-modal').classList.add('hidden');
         }
 
-        // --- Graph Visualization ---
-        function showGraphModal() {
-            document.getElementById('graph-modal').classList.remove('hidden');
-            document.getElementById('graph-modal').classList.add('flex');
-            renderGraph();
-        }
+        // --- Markdown Export Functions ---
+        function generateGemsMarkdown() {
+            let md = "# 🌟 Hidden Gems Discovered by Stars Unifier\n\n";
+            md += `**Total Discovered:** ${discoveredLinksMap.size}\n`;
+            md += `**Generated:** ${new Date().toLocaleString()}\n\n`;
+            
+            const newGems = [];
+            const existingGems = [];
 
-        function closeGraphModal() {
-            document.getElementById('graph-modal').classList.remove('flex');
-            document.getElementById('graph-modal').classList.add('hidden');
-        }
-
-        function renderGraph() {
-            const svg = document.getElementById('graph-svg');
-            const container = document.getElementById('graph-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-
-            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-            svg.innerHTML = '';
-
-            // Build nodes and links
-            const nodes = new Map();
-            const links = [];
-
-            // Add starred repos as nodes
-            repos.forEach(repo => {
-                const key = `${repo.owner.toLowerCase()}/${repo.name.toLowerCase()}`;
-                nodes.set(key, {
-                    key,
-                    owner: repo.owner,
-                    name: repo.name,
-                    type: 'star',
-                    links: repo.linkedReposCount,
-                    reverseLinks: repo.reverseLinkCount || 0
-                });
-            });
-
-            // Add discovered gems as nodes
             discoveredLinksMap.forEach((sources, key) => {
-                if (!nodes.has(key)) {
-                    const parts = key.split('/');
-                    nodes.set(key, {
-                        key,
-                        owner: parts[0],
-                        name: parts[1],
-                        type: 'gem',
-                        links: 0,
-                        reverseLinks: sources.size
-                    });
-                }
-            });
-
-            // Build links
-            repos.forEach(repo => {
-                if (repo.linkedRepos && repo.linkedRepos.length > 0) {
-                    const sourceKey = `${repo.owner.toLowerCase()}/${repo.name.toLowerCase()}`;
-                    repo.linkedRepos.forEach(linked => {
-                        const targetKey = `${linked.owner.toLowerCase()}/${linked.name.toLowerCase()}`;
-                        if (nodes.has(targetKey)) {
-                            links.push({ source: sourceKey, target: targetKey });
-                        }
-                    });
-                }
-            });
-
-            // Simple force-directed layout (circular for now)
-            const nodeArray = Array.from(nodes.values());
-            const centerX = width / 2;
-            const centerY = height / 2;
-            const radius = Math.min(width, height) / 3;
-
-            nodeArray.forEach((node, i) => {
-                const angle = (i / nodeArray.length) * 2 * Math.PI;
-                node.x = centerX + radius * Math.cos(angle);
-                node.y = centerY + radius * Math.sin(angle);
-            });
-
-            // Draw links
-            links.forEach(link => {
-                const source = nodes.get(link.source);
-                const target = nodes.get(link.target);
-                if (source && target) {
-                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                    line.setAttribute('x1', source.x);
-                    line.setAttribute('y1', source.y);
-                    line.setAttribute('x2', target.x);
-                    line.setAttribute('y2', target.y);
-                    line.setAttribute('stroke', '#6366f1');
-                    line.setAttribute('stroke-width', '1');
-                    line.classList.add('graph-link');
-                    svg.appendChild(line);
-                }
-            });
-
-            // Draw nodes
-            nodeArray.forEach(node => {
-                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('cx', node.x);
-                circle.setAttribute('cy', node.y);
-                circle.setAttribute('r', node.type === 'star' ? 8 : 5);
-                circle.setAttribute('fill', node.type === 'star' ? '#f59e0b' : '#10b981');
-                circle.classList.add('graph-node');
-                circle.setAttribute('data-key', node.key);
+                const parts = key.split('/');
+                const owner = parts[0] || 'unknown';
+                const name = parts[1] || 'unknown';
+                const url = `https://github.com/${owner}/${name}`;
+                const sourcesStr = Array.from(sources).join(', ');
+                const isInStars = repos.some(r => r.owner.toLowerCase() === owner.toLowerCase() && r.name.toLowerCase() === name.toLowerCase());
                 
-                const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                title.textContent = `${node.owner}/${node.name} (${node.type === 'star' ? 'Starred' : 'Discovered Gem'})`;
-                circle.appendChild(title);
-
-                circle.onclick = () => {
-                    const repo = repos.find(r => r.owner.toLowerCase() === node.owner.toLowerCase() && r.name.toLowerCase() === node.name.toLowerCase());
-                    if (repo) {
-                        closeGraphModal();
-                        openModal(repo);
-                    } else {
-                        window.open(`https://github.com/${node.owner}/${node.name}`, '_blank');
-                    }
-                };
-
-                svg.appendChild(circle);
+                const line = `- [**${owner}/${name}**](${url})\n  - *Found in:* ${sourcesStr}\n`;
+                
+                if (!isInStars) {
+                    newGems.push(line);
+                } else {
+                    existingGems.push(line);
+                }
             });
 
-            // Legend
-            const legend = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-            legend.innerHTML = `
-                <circle cx="20" cy="20" r="8" fill="#f59e0b"/>
-                <text x="35" y="25" fill="#e4e4e7" font-size="12">Starred Repo</text>
-                <circle cx="20" cy="45" r="5" fill="#10b981"/>
-                <text x="35" y="50" fill="#e4e4e7" font-size="12">Discovered Gem</text>
-            `;
-            svg.appendChild(legend);
+            if (newGems.length > 0) {
+                md += "## ✨ NEW (Not in Stars)\n\n" + newGems.join('\n') + "\n";
+            }
+            if (existingGems.length > 0) {
+                md += "## 📌 Already in Stars\n\n" + existingGems.join('\n') + "\n";
+            }
+            
+            return md;
+        }
+
+        function copyGemsMarkdown() {
+            const md = generateGemsMarkdown();
+            navigator.clipboard.writeText(md).then(() => {
+                showToast('Markdown copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy Markdown', 'error');
+            });
+        }
+
+        function downloadGemsMarkdown() {
+            const md = generateGemsMarkdown();
+            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.md`);
+            link.click();
+            showToast('Markdown file downloaded', 'success');
         }
 
         // --- Export & Share Functions ---
@@ -1384,7 +1339,6 @@
 
             try {
                 localStorage.removeItem(CACHE_KEY);
-                // Don't clear gems cache on refresh
                 readmeSessionCache.clear();
                 reverseLinkMap.clear();
                 
@@ -1412,7 +1366,6 @@
             
             loadSharedData();
             
-            // Load gems from cache first
             const gemsLoaded = loadGemsFromCache();
             if (gemsLoaded) {
                 updateDiscoveredStat();
@@ -1434,13 +1387,10 @@
                 updateRepoCount();
             }
 
-            // NO automatic scan - only when user clicks Smart Scan
-
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     if (!document.getElementById('modal').classList.contains('hidden')) closeModal();
                     else if (!document.getElementById('discovered-modal').classList.contains('hidden')) closeDiscoveredModal();
-                    else if (!document.getElementById('graph-modal').classList.contains('hidden')) closeGraphModal();
                     else {
                         const input = document.getElementById('search-input');
                         if (input.value) { input.value = ''; filterRepos(); }
