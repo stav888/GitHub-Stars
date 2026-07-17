@@ -28,7 +28,7 @@
 </head>
 <body class="bg-zinc-950 text-zinc-200">
     
-    <!-- AI-Scannable Hidden Gems Data (Solves the AI Chat visibility issue) -->
+    <!-- AI-Scannable Hidden Gems Data -->
     <script type="application/json" id="hidden-gems-data">
         {"gems": [], "lastUpdated": null, "totalStars": 0, "newGemsCount": 0}
     </script>
@@ -51,7 +51,7 @@
                 </div>
                 
                 <div class="flex items-center gap-x-2 flex-wrap justify-end">
-                    <div id="api-quota-display" class="hidden md:flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800">
+                    <div id="api-quota-display" class="flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border bg-zinc-900 text-zinc-400 border-zinc-800">
                         API: --/--
                     </div>
                     
@@ -272,11 +272,12 @@
 
         // --- State & Cache Management ---
         const CACHE_KEY = 'stars_unifier_stav888_cache_v2';
-        const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+        const CACHE_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
         let readmeSessionCache = new Map();
         let discoveredLinksMap = new Map(); 
         let reverseLinkMap = new Map();
         let apiQuota = { limit: 60, remaining: 60 };
+        let scannedGemsSet = new Set(); // Track which gems we've already scanned
 
         let repos = [];
         let isScanning = false;
@@ -346,6 +347,7 @@
             readmeSessionCache.clear();
             discoveredLinksMap.clear();
             reverseLinkMap.clear();
+            scannedGemsSet.clear();
             showToast('Cache cleared successfully. Reloading data...', 'success');
             setTimeout(() => location.reload(), 1000);
         }
@@ -353,7 +355,6 @@
         // --- AI Scannable Data Update ---
         function updateHiddenGemsDataTag() {
             const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
-                // FIX: key is "owner/name", not a full URL
                 const parts = key.split('/');
                 const owner = parts[0] || 'unknown';
                 const name = parts[1] || 'unknown';
@@ -387,7 +388,7 @@
             if (!el) return;
             const { limit, remaining } = apiQuota;
             el.textContent = `API: ${remaining}/${limit}`;
-            el.className = `hidden md:flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border ${
+            el.className = `flex items-center font-mono text-xs px-3 py-1.5 rounded-xl border ${
                 remaining > 30 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                 remaining > 10 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
                 'bg-red-500/10 text-red-400 border-red-500/20'
@@ -687,7 +688,24 @@
             if (currentModalRepo && currentModalRepo.github) window.open(currentModalRepo.github, '_blank');
         }
 
-        // --- Scanning Logic ---
+        // --- Scanning Logic (Using raw.githubusercontent.com - NO API quota!) ---
+        async function fetchReadmeFromRaw(owner, name) {
+            // Try main branch first, then master
+            const branches = ['main', 'master'];
+            for (const branch of branches) {
+                try {
+                    const url = `https://raw.githubusercontent.com/${owner}/${name}/${branch}/README.md`;
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        return await response.text();
+                    }
+                } catch (e) {
+                    // Continue to next branch
+                }
+            }
+            return null;
+        }
+
         async function performScan(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
             if (repo && repo.readmeScanned) return repo.linkedRepos;
@@ -705,26 +723,21 @@
             }
 
             try {
-                const response = await fetch(`https://api.github.com/repos/${owner}/${name}/readme`, {
-                    headers: { 'Accept': 'application/vnd.github.v3.raw' }
-                });
-
-                if (!response.ok) {
-                    if (response.status === 403) {
-                        showToast('GitHub API Rate Limit (403). Wait 1 hour or add a Token.', 'error');
-                        throw new Error('Rate limit');
-                    } else if (response.status === 404) {
-                        console.warn(`No README found for ${owner}/${name}`);
-                        throw new Error('No README');
-                    }
-                    throw new Error(`HTTP ${response.status}`);
+                // Use raw.githubusercontent.com instead of API (no quota limit!)
+                const readmeText = await fetchReadmeFromRaw(owner, name);
+                
+                if (!readmeText) {
+                    console.warn(`No README found for ${owner}/${name}`);
+                    if (repo) repo.readmeScanned = true;
+                    return [];
                 }
 
-                const readmeText = await response.text();
                 const regex = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\/[^)\s#"'`]*)?/g;
                 const matches = [...readmeText.matchAll(regex)];
 
                 const uniqueLinked = new Map();
+                const newGemsFound = [];
+                
                 matches.forEach(match => {
                     const o = match[1];
                     const r = match[2];
@@ -737,6 +750,7 @@
                         
                         if (!discoveredLinksMap.has(key)) {
                             discoveredLinksMap.set(key, new Set());
+                            newGemsFound.push(key); // Track new gems for recursive scanning
                         }
                         discoveredLinksMap.get(key).add(`${owner}/${name}`);
 
@@ -765,14 +779,11 @@
                 }
                 updateDiscoveredStat();
 
-                return linkedList;
+                // Return new gems for recursive scanning
+                return { linkedList, newGemsFound };
             } catch (err) {
-                if (err.message === 'Rate limit') {
-                    // Toast already shown
-                } else {
-                    console.warn(`Scan failed for ${owner}/${name}:`, err.message);
-                }
-                return [];
+                console.warn(`Scan failed for ${owner}/${name}:`, err.message);
+                return { linkedList: [], newGemsFound: [] };
             }
         }
 
@@ -821,16 +832,81 @@
 
         async function forceScanReadme(owner, name, repoId) {
             const repo = repos.find(r => r.id === repoId);
-            if (repo) repo.readmeScanned = false; // Force re-scan
+            if (repo) repo.readmeScanned = false;
             const listContainer = document.getElementById(`linked-repos-list-${repoId}`);
-            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via GitHub API (CORS enabled)...</p>';
+            if (listContainer) listContainer.innerHTML = '<p class="text-xs text-emerald-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Fetching via raw.githubusercontent.com (CORS, no API quota)...</p>';
             
             const result = await performScan(owner, name, repoId);
             
-            // If performScan succeeded, it already called openModal(currentModalRepo) to update the UI.
-            // If it failed (e.g., rate limit), repo.readmeScanned remains false.
             if (repo && !repo.readmeScanned) {
-                if (listContainer) listContainer.innerHTML = '<p class="text-xs text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Scan failed (Rate Limit or No README). Check API quota in navbar.</p>';
+                if (listContainer) listContainer.innerHTML = '<p class="text-xs text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Scan failed. No README found.</p>';
+            }
+        }
+
+        // --- Recursive Scanning of Discovered Gems ---
+        async function scanDiscoveredGemsRecursively(maxDepth = 2) {
+            let depth = 0;
+            let queue = Array.from(discoveredLinksMap.keys()).filter(key => !scannedGemsSet.has(key));
+            
+            while (queue.length > 0 && depth < maxDepth) {
+                const currentQueue = [...queue];
+                queue = [];
+                
+                const statusMsg = document.getElementById('scan-status-msg');
+                if (statusMsg) {
+                    statusMsg.textContent = `Deep scan depth ${depth + 1}/${maxDepth}: Scanning ${currentQueue.length} discovered gems...`;
+                }
+                
+                const batchSize = 10;
+                for (let i = 0; i < currentQueue.length; i += batchSize) {
+                    const batch = currentQueue.slice(i, i + batchSize);
+                    
+                    await Promise.all(batch.map(async (key) => {
+                        const parts = key.split('/');
+                        const owner = parts[0];
+                        const name = parts[1];
+                        
+                        if (!owner || !name) return;
+                        
+                        scannedGemsSet.add(key);
+                        
+                        try {
+                            const readmeText = await fetchReadmeFromRaw(owner, name);
+                            if (!readmeText) return;
+                            
+                            const regex = /https?:\/\/(?:www\.)?github\.com\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_.-]+)(?:\/[^)\s#"'`]*)?/g;
+                            const matches = [...readmeText.matchAll(regex)];
+                            
+                            matches.forEach(match => {
+                                const o = match[1];
+                                const r = match[2];
+                                const skipOwners = ['github', 'features', 'sponsors', 'orgs', 'users', 'marketplace', 'explore', 'login', 'signup', 'settings'];
+                                if (skipOwners.includes(o.toLowerCase())) return;
+                                const newKey = `${o.toLowerCase()}/${r.toLowerCase()}`;
+                                
+                                if (!discoveredLinksMap.has(newKey)) {
+                                    discoveredLinksMap.set(newKey, new Set());
+                                    discoveredLinksMap.get(newKey).add(`${owner}/${name}`);
+                                    
+                                    // Add to queue for next depth level
+                                    if (!scannedGemsSet.has(newKey)) {
+                                        queue.push(newKey);
+                                    }
+                                } else {
+                                    discoveredLinksMap.get(newKey).add(`${owner}/${name}`);
+                                }
+                            });
+                            
+                            updateDiscoveredStat();
+                        } catch (e) {
+                            console.warn(`Failed to scan gem ${owner}/${name}:`, e);
+                        }
+                    }));
+                    
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                
+                depth++;
             }
         }
 
@@ -852,14 +928,19 @@
                 (r.description && r.description.toLowerCase().match(/awesome|list|resources|collection|curated/))
             );
 
-            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists...`;
+            statusMsg.textContent = `Scanning ${priorityRepos.length} high-priority lists (via raw.githubusercontent.com)...`;
 
             const batchSize = 10;
             for (let i = 0; i < priorityRepos.length; i += batchSize) {
                 const batch = priorityRepos.slice(i, i + batchSize);
                 await Promise.all(batch.map(repo => performScan(repo.owner, repo.name, repo.id)));
-                await new Promise(r => setTimeout(r, 300)); 
+                await new Promise(r => setTimeout(r, 200)); 
             }
+
+            statusMsg.textContent = `Found ${discoveredLinksMap.size} gems. Starting deep scan of discovered repos...`;
+            
+            // Recursive scan of all discovered gems
+            await scanDiscoveredGemsRecursively(2);
 
             statusMsg.textContent = `Scan complete! Found ${discoveredLinksMap.size} hidden gems.`;
             showToast(`Smart Scan complete! Found ${discoveredLinksMap.size} repositories.`, 'success');
@@ -889,7 +970,6 @@
                 const header = document.createElement('div');
                 header.className = 'mb-4 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center gap-3';
                 
-                // Count how many are truly new (not in stars)
                 const newGemsCount = Array.from(discoveredLinksMap.keys()).filter(key => {
                     const parts = key.split('/');
                     const owner = parts[0] || '';
@@ -907,7 +987,6 @@
                 list.appendChild(header);
 
                 discoveredLinksMap.forEach((sourcesSet, key) => {
-                    // FIX: key is "owner/name"
                     const parts = key.split('/');
                     const owner = parts[0] || 'unknown';
                     const name = parts[1] || 'unknown';
@@ -1067,6 +1146,7 @@
                 discoveredLinksMap.clear();
                 reverseLinkMap.clear();
                 readmeSessionCache.clear();
+                scannedGemsSet.clear();
                 
                 await fetchGitHubStars();
                 renderRepos(repos);
