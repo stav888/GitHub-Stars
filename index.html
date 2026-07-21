@@ -86,27 +86,28 @@
                             <i class="fa-solid fa-chevron-down text-xs ml-1"></i>
                         </button>
                         <div class="absolute right-0 mt-2 w-64 bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
-                            <button onclick="exportData()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-file-code text-indigo-400 w-5"></i> Export All Repos (JSON)
+                            <div class="px-4 py-2 text-[10px] font-semibold tracking-widest text-zinc-500">TOTAL STARS</div>
+                            <button onclick="copyStarsJSON()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-copy text-indigo-400 w-5"></i> Copy as JSON
                             </button>
-                            <button onclick="exportGemsJSON()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-file-code text-amber-400 w-5"></i> Export Hidden Gems (JSON)
+                            <button onclick="copyStarsMarkdown()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-brands fa-markdown text-indigo-400 w-5"></i> Copy as Markdown
                             </button>
-                            <button onclick="exportGemsCSV()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-file-csv text-emerald-400 w-5"></i> Export Hidden Gems (CSV)
+                            <button onclick="copyStarsShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-share-nodes text-indigo-400 w-5"></i> Copy Share Link
                             </button>
                             <div class="border-t border-zinc-800 my-1"></div>
+                            <div class="px-4 py-2 text-[10px] font-semibold tracking-widest text-zinc-500">GEMS</div>
+                            <button onclick="copyGemsJSON()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-copy text-amber-400 w-5"></i> Copy as JSON
+                            </button>
                             <button onclick="copyGemsMarkdown()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-brands fa-markdown text-blue-400 w-5"></i> Copy Gems as Markdown
+                                <i class="fa-brands fa-markdown text-amber-400 w-5"></i> Copy as Markdown
                             </button>
-                            <button onclick="downloadGemsMarkdown()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-file-arrow-down text-blue-400 w-5"></i> Download Gems (.md)
+                            <button onclick="copyGemsShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
+                                <i class="fa-solid fa-share-nodes text-amber-400 w-5"></i> Copy Share Link
                             </button>
-                            <div class="border-t border-zinc-800 my-1"></div>
-                            <button onclick="generateShareLink()" class="w-full text-left px-4 py-3 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white flex items-center gap-3 transition-colors">
-                                <i class="fa-solid fa-share-nodes text-blue-400 w-5"></i> Copy Share Link
-                            </button>
-        </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1096,17 +1097,58 @@
         function copyGemsMarkdown() {
             const md = generateGemsMarkdown();
             if (!md) { showToast('No data to copy', 'error'); return; }
-            
-            // Modern API
+            copyToClipboard(md, 'Gems Markdown copied to clipboard!');
+        }
+
+        function generateStarsMarkdown() {
+            let md = "# ⭐ Total Stars\n\n";
+            md += `**Total Repositories:** ${repos.length}\n`;
+            md += `**Generated:** ${new Date().toLocaleString()}\n\n`;
+            repos.forEach(repo => {
+                const description = repo.description ? ` — ${repo.description}` : '';
+                md += `- [**${repo.owner}/${repo.name}**](${repo.github})${description}\n`;
+            });
+            return md;
+        }
+
+        function copyToClipboard(text, successMessage) {
             if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(md).then(() => {
-                    showToast('Markdown copied to clipboard!', 'success');
-                }).catch(() => {
-                    fallbackCopy(md);
-                });
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast(successMessage, 'success'))
+                    .catch(() => fallbackCopy(text, successMessage));
             } else {
-                fallbackCopy(md);
+                fallbackCopy(text, successMessage);
             }
+        }
+
+        function copyStarsJSON() {
+            if (repos.length === 0) { showToast('No starred repositories to copy', 'error'); return; }
+            copyToClipboard(JSON.stringify(repos, null, 2), 'Total Stars JSON copied to clipboard!');
+        }
+
+        function copyGemsJSON() {
+            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
+                const parts = key.split('/');
+                return {
+                    url: `https://github.com/${parts[0]}/${parts[1]}`,
+                    sources: Array.from(sources),
+                    owner: parts[0] || 'unknown',
+                    name: parts[1] || 'unknown'
+                };
+            });
+            if (gems.length === 0) { showToast('No gems to copy', 'error'); return; }
+            copyToClipboard(JSON.stringify(gems, null, 2), 'Gems JSON copied to clipboard!');
+        }
+
+        function copyStarsMarkdown() {
+            if (repos.length === 0) { showToast('No starred repositories to copy', 'error'); return; }
+            copyToClipboard(generateStarsMarkdown(), 'Total Stars Markdown copied to clipboard!');
+        }
+
+        function copyStarsShareLink() {
+            const state = { type: 'stars', repos, timestamp: Date.now() };
+            const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
+            copyToClipboard(`${window.location.origin}${window.location.pathname}?share=${encoded}`, 'Total Stars share link copied!');
         }
 
         function fallbackCopy(text) {
@@ -1119,70 +1161,22 @@
             textArea.select();
             try {
                 document.execCommand('copy');
-                showToast('Markdown copied to clipboard!', 'success');
+                showToast('Content copied to clipboard!', 'success');
             } catch (err) {
                 showToast('Failed to copy. Please copy manually.', 'error');
             }
             document.body.removeChild(textArea);
         }
 
-        function downloadGemsMarkdown() {
-            const md = generateGemsMarkdown();
-            const blob = new Blob([md], { type: 'text/markdown;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.md`);
-            link.click();
-            showToast('Markdown file downloaded', 'success');
-        }
-
-        // --- Export & Share Functions ---
-        function exportData() {
-            const dataStr = JSON.stringify(repos, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-            const link = document.createElement('a');
-            link.setAttribute('href', dataUri);
-            link.setAttribute('download', `stars-unifier-stav888-${new Date().toISOString().slice(0,10)}.json`);
-            link.click();
-            showToast(`Exported ${repos.length} repositories`, 'success');
-        }
-
-        function exportGemsJSON() {
-            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
-                const parts = key.split('/');
-                return { url: `https://github.com/${parts[0]}/${parts[1]}`, sources: Array.from(sources), owner: parts[0] || 'unknown', name: parts[1] || 'unknown' };
-            });
-            if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
-            const dataStr = JSON.stringify(gems, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-            const link = document.createElement('a');
-            link.setAttribute('href', dataUri);
-            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.json`);
-            link.click();
-            showToast('Gems exported to JSON', 'success');
-        }
-
-        function exportGemsCSV() {
-            const gems = Array.from(discoveredLinksMap.entries()).map(([key, sources]) => {
-                const parts = key.split('/');
-                return { url: `https://github.com/${parts[0]}/${parts[1]}`, sources: Array.from(sources).join(' | '), owner: parts[0] || 'unknown', name: parts[1] || 'unknown' };
-            });
-            if (gems.length === 0) { showToast('No gems to export', 'error'); return; }
-            const headers = Object.keys(gems[0]);
-            const csvContent = [headers.join(','), ...gems.map(row => headers.map(h => `"${String(row[h]).replace(/"/g, '""')}"`).join(','))].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', `hidden-gems-${new Date().toISOString().slice(0,10)}.csv`);
-            link.click();
-            showToast('Gems exported to CSV', 'success');
-        }
-
-        function generateShareLink() {
-            const state = { discovered: Array.from(discoveredLinksMap.entries()).map(([key, sources]) => [key, Array.from(sources)]), timestamp: Date.now() };
+        // --- Share Functions ---
+        function copyGemsShareLink() {
+            const state = {
+                type: 'gems',
+                discovered: Array.from(discoveredLinksMap.entries()).map(([key, sources]) => [key, Array.from(sources)]),
+                timestamp: Date.now()
+            };
             const encoded = btoa(encodeURIComponent(JSON.stringify(state)));
-            const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
-            navigator.clipboard.writeText(shareUrl).then(() => showToast('Share link copied!', 'success')).catch(() => showToast('Failed to copy link', 'error'));
+            copyToClipboard(`${window.location.origin}${window.location.pathname}?share=${encoded}`, 'Gems share link copied!');
         }
 
         function loadSharedData() {
@@ -1191,11 +1185,21 @@
             if (shareData) {
                 try {
                     const decoded = JSON.parse(decodeURIComponent(atob(shareData)));
-                    discoveredLinksMap.clear();
-                    decoded.discovered.forEach(([key, sources]) => discoveredLinksMap.set(key, new Set(sources)));
-                    updateDiscoveredStat();
-                    updateAIMetaTags(); // UPDATED: Called here
-                    showToast('Loaded shared data successfully!', 'success');
+                    if (decoded.type === 'stars' && Array.isArray(decoded.repos)) {
+                        repos = decoded.repos;
+                        renderCategoryPills();
+                        renderRepos(repos);
+                        updateStats(repos);
+                        showToast('Loaded Total Stars successfully!', 'success');
+                    } else if (Array.isArray(decoded.discovered)) {
+                        discoveredLinksMap.clear();
+                        decoded.discovered.forEach(([key, sources]) => discoveredLinksMap.set(key, new Set(sources)));
+                        updateDiscoveredStat();
+                        updateAIMetaTags();
+                        showToast('Loaded Gems successfully!', 'success');
+                    } else {
+                        throw new Error('Unsupported share data');
+                    }
                     window.history.replaceState({}, document.title, window.location.pathname);
                 } catch (e) { showToast('Invalid share link', 'error'); }
             }
